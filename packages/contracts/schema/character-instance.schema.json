@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:character-instance",
+  "title": "CharacterInstance",
+  "description": "A character as it exists inside one scenario continuity. RCE-003. Pins a source release and adds explicit overrides; resolving an instance never writes to the release or the core (INV-012). Memories, beliefs and runtime conditions are NOT here — they are separate continuity-scoped records referencing this instance.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "scope": {
+      "$ref": "urn:rce:schema:common#/$defs/ContinuityScope"
+    },
+    "schema_version": {
+      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+    },
+    "revision": {
+      "$ref": "urn:rce:schema:common#/$defs/Revision"
+    },
+    "created_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "updated_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "source_release_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid",
+      "description": "Pinned. A newer release of the same core does not retroactively change this instance."
+    },
+    "resolved_definition_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 of the resolved view. The same release plus the same overrides must reproduce it (INV-013)."
+    },
+    "overrides": {
+      "type": "object",
+      "description": "Keyed by dotted path so a path can appear at most once — two conflicting overrides of the same field are unrepresentable rather than merely discouraged. propertyNames restricts which paths may be overridden at all: identity, appearance, orientation, terminology, relationship_config, values, traits, voice, preferences, goals and agency. Notably absent are age, id, core_id and owner_id — a scenario override can never move the adult gate or reassign ownership (INV-018, INV-032).",
+      "propertyNames": {
+        "pattern": "^(identity|appearance|orientation|terminology|relationship_config|values|traits|voice|preferences|goals|agency)(\\.[a-z0-9_]{1,40}){0,4}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "not": {
+              "type": "null"
+            }
+          },
+          "authority": {
+            "const": "explicit_author"
+          },
+          "provenance": {
+            "$ref": "urn:rce:schema:common#/$defs/Provenance"
+          }
+        },
+        "required": [
+          "value",
+          "authority",
+          "provenance"
+        ],
+        "additionalProperties": false
+      },
+      "maxProperties": 128
+    },
+    "x_ext": {
+      "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    }
+  },
+  "required": [
+    "id",
+    "scope",
+    "schema_version",
+    "revision",
+    "created_at",
+    "updated_at",
+    "source_release_id",
+    "resolved_definition_hash"
+  ],
+  "additionalProperties": false
+}

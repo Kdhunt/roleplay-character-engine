@@ -1,0 +1,141 @@
+{
+  "format": "rce-fixture-manifest",
+  "schema_version": 1,
+  "story": "RCE-001 dependency; delivered by RCE-003",
+  "note": "Every entry states the schema it must be checked against and the expected outcome. Executable validation arrives with RCE-061 tooling; until then these are unvalidated artifacts.",
+  "schema_dir": "packages/contracts/schema",
+  "cases": [
+    {
+      "file": "valid/core.minimal.json",
+      "schema": "character-core",
+      "expect": "valid",
+      "why": "Minimal publishable-shaped draft core."
+    },
+    {
+      "file": "valid/core.age-unknown-draft.json",
+      "schema": "character-core",
+      "expect": "valid",
+      "why": "A draft may hold an unknown age; only a release may not."
+    },
+    {
+      "file": "valid/release.minimal.json",
+      "schema": "character-release",
+      "expect": "valid",
+      "why": "Minimal valid character release."
+    },
+    {
+      "file": "valid/release.with-extensions.json",
+      "schema": "character-release",
+      "expect": "valid",
+      "why": "Unknown data survives only inside namespaced x_ext."
+    },
+    {
+      "file": "valid/release.contested-attribute.json",
+      "schema": "character-release",
+      "expect": "valid",
+      "why": "Equal-authority conflict is representable and explicit."
+    },
+    {
+      "file": "valid/instance.minimal.json",
+      "schema": "character-instance",
+      "expect": "valid",
+      "why": "Instance pinned to a release with no overrides."
+    },
+    {
+      "file": "valid/instance.scoped-override.json",
+      "schema": "character-instance",
+      "expect": "valid",
+      "why": "Overrides on permitted paths only."
+    },
+    {
+      "file": "valid/persona.minimal.json",
+      "schema": "persona",
+      "expect": "valid",
+      "why": "Persona carries fictional identity, never real identity."
+    },
+    {
+      "file": "valid/preview.minimal.json",
+      "schema": "character-preview",
+      "expect": "valid",
+      "why": "Catalog preview with nothing private in it."
+    },
+    {
+      "file": "valid/resolved.minimal.json",
+      "schema": "resolved-character",
+      "expect": "valid",
+      "why": "Resolved view records which layer supplied each field."
+    },
+    {
+      "file": "invalid/release.age-unknown.json",
+      "schema": "character-release",
+      "expect": "invalid",
+      "why": "Unknown age cannot be published (INV-032)."
+    },
+    {
+      "file": "invalid/release.age-underage.json",
+      "schema": "character-release",
+      "expect": "invalid",
+      "why": "Age below 18 is rejected structurally."
+    },
+    {
+      "file": "invalid/release.age-contested.json",
+      "schema": "character-release",
+      "expect": "invalid",
+      "why": "Contested age is not an adult age."
+    },
+    {
+      "file": "invalid/release.unknown-field.json",
+      "schema": "character-release",
+      "expect": "invalid",
+      "why": "Stray top-level field is rejected, not silently kept."
+    },
+    {
+      "file": "invalid/release.extension-unnamespaced.json",
+      "schema": "character-release",
+      "expect": "invalid",
+      "why": "Extension keys must be vendor-namespaced."
+    },
+    {
+      "file": "invalid/instance.override-age.json",
+      "schema": "character-instance",
+      "expect": "invalid",
+      "why": "A scenario override cannot move the adult gate."
+    },
+    {
+      "file": "invalid/instance.override-owner.json",
+      "schema": "character-instance",
+      "expect": "invalid",
+      "why": "A scenario override cannot reassign ownership (INV-018)."
+    },
+    {
+      "file": "invalid/instance.unscoped.json",
+      "schema": "character-instance",
+      "expect": "invalid",
+      "why": "Continuity scope is mandatory (INV-017)."
+    },
+    {
+      "file": "invalid/preview.leaks-private.json",
+      "schema": "character-preview",
+      "expect": "invalid",
+      "why": "Private goals and internal attributes have no place in a preview (INV-022)."
+    },
+    {
+      "file": "invalid/fact.null-value.json",
+      "schema": "fact-envelope",
+      "expect": "invalid",
+      "why": "Null is never how absence is expressed (INV-005)."
+    },
+    {
+      "file": "invalid/fact.unknown-with-value.json",
+      "schema": "fact-envelope",
+      "expect": "invalid",
+      "why": "Unknown cannot carry a value."
+    },
+    {
+      "file": "invalid/fact.contested-single-candidate.json",
+      "schema": "fact-envelope",
+      "expect": "invalid",
+      "why": "Contested requires at least two candidates."
+    }
+  ]
+}

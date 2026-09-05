@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:character-core",
+  "title": "CharacterCore",
+  "description": "Creator-owned, global, mutable draft. RCE-003. Holds the working draft and pointers to published releases; a core edit never mutates a release or an existing scenario (INV-009). Unlike a release, a draft core may carry an unknown age — it simply cannot be published until the age is known and adult (INV-032).",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "owner_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "schema_version": {
+      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+    },
+    "revision": {
+      "$ref": "urn:rce:schema:common#/$defs/Revision"
+    },
+    "created_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "updated_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "title": {
+      "$ref": "urn:rce:schema:common#/$defs/ShortText"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "catalog_pending",
+        "catalog_approved"
+      ]
+    },
+    "archived": {
+      "type": "boolean"
+    },
+    "draft_age": {
+      "$ref": "urn:rce:schema:fact-envelope",
+      "description": "May be known, unknown or contested while drafting. Publishing requires known and adult."
+    },
+    "current_release_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid",
+      "description": "Absent until the first release is published. Absence means never published, not 'unknown'."
+    },
+    "release_ids": {
+      "type": "array",
+      "description": "Every published release, oldest first. Append-only.",
+      "items": {
+        "$ref": "urn:rce:schema:common#/$defs/Uuid"
+      },
+      "maxItems": 1000
+    },
+    "x_ext": {
+      "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    }
+  },
+  "required": [
+    "id",
+    "owner_id",
+    "schema_version",
+    "revision",
+    "created_at",
+    "updated_at",
+    "title",
+    "visibility",
+    "archived",
+    "release_ids"
+  ],
+  "additionalProperties": false
+}

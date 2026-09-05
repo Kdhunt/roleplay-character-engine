@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:fact-envelope",
+  "title": "FactEnvelope",
+  "description": "Wrapper making every authored or derived value auditable. RCE-003. Three states are structurally distinct: an ABSENT envelope means nothing was ever recorded; knowledge_status 'unknown' means canon records that no value is established; 'contested' means equal-authority facts conflict. A null value is never a way to say any of these (INV-005).",
+  "type": "object",
+  "properties": {
+    "knowledge_status": {
+      "$ref": "urn:rce:schema:common#/$defs/KnowledgeStatus"
+    },
+    "value": {
+      "not": {
+        "type": "null"
+      },
+      "description": "Present only when knowledge_status is 'known'. Null is forbidden; absence of knowledge is expressed by knowledge_status, never by a null."
+    },
+    "candidates": {
+      "type": "array",
+      "description": "Present only when knowledge_status is 'contested'. Each conflicting value with its own provenance; none silently wins (INV-006).",
+      "minItems": 2,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "not": {
+              "type": "null"
+            }
+          },
+          "authority": {
+            "$ref": "urn:rce:schema:common#/$defs/Authority"
+          },
+          "provenance": {
+            "$ref": "urn:rce:schema:common#/$defs/Provenance"
+          }
+        },
+        "required": [
+          "value",
+          "authority",
+          "provenance"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "authority": {
+      "$ref": "urn:rce:schema:common#/$defs/Authority"
+    },
+    "lock_state": {
+      "$ref": "urn:rce:schema:common#/$defs/LockState"
+    },
+    "lifetime": {
+      "$ref": "urn:rce:schema:common#/$defs/Lifetime"
+    },
+    "provenance": {
+      "$ref": "urn:rce:schema:common#/$defs/Provenance"
+    },
+    "x_ext": {
+      "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    }
+  },
+  "required": [
+    "knowledge_status",
+    "authority",
+    "lifetime",
+    "provenance"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "knowledge_status": {
+            "const": "known"
+          }
+        },
+        "required": [
+          "knowledge_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "value"
+        ],
+        "properties": {
+          "value": true,
+          "candidates": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "knowledge_status": {
+            "const": "unknown"
+          }
+        },
+        "required": [
+          "knowledge_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "value": false,
+          "candidates": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "knowledge_status": {
+            "const": "contested"
+          }
+        },
+        "required": [
+          "knowledge_status"
+        ]
+      },
+      "then": {
+        "required": [
+          "candidates"
+        ],
+        "properties": {
+          "candidates": true,
+          "value": false
+        }
+      }
+    }
+  ]
+}

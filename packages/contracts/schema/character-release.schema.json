@@ -1,0 +1,434 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:character-release",
+  "title": "CharacterRelease",
+  "description": "Immutable published snapshot of a CharacterCore. RCE-003. A core edit produces a new release and never mutates an existing one (INV-009). Runtime conditions and memories are referenced, never embedded: a release does not grow as a scenario is played.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "core_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "owner_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "schema_version": {
+      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+    },
+    "revision": {
+      "$ref": "urn:rce:schema:common#/$defs/Revision"
+    },
+    "created_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "updated_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "title": {
+      "$ref": "urn:rce:schema:common#/$defs/ShortText"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "catalog_pending",
+        "catalog_approved"
+      ],
+      "description": "Catalog approval and private ownership are separate concerns."
+    },
+    "pins": {
+      "$ref": "urn:rce:schema:common#/$defs/PinnedVersions"
+    },
+    "age": {
+      "description": "A publishable release requires an unambiguously adult, known age (INV-032). A draft core may carry unknown age; a release may not. Adulthood is never inferred from appearance, anatomy, species or archetype name.",
+      "allOf": [
+        {
+          "$ref": "urn:rce:schema:fact-envelope"
+        },
+        {
+          "properties": {
+            "knowledge_status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 18,
+              "maximum": 4000
+            }
+          },
+          "required": [
+            "knowledge_status",
+            "value"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "identity": {
+      "type": "object",
+      "description": "Independent of anatomy, orientation, terminology and relationship configuration (INV-014).",
+      "properties": {
+        "display_name": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        },
+        "pronouns": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          },
+          "minItems": 1,
+          "maxItems": 6
+        },
+        "gender": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        },
+        "species": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        },
+        "background": {
+          "$ref": "urn:rce:schema:common#/$defs/LongText"
+        }
+      },
+      "required": [
+        "display_name",
+        "pronouns"
+      ],
+      "additionalProperties": false
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "$ref": "urn:rce:schema:common#/$defs/MediumText"
+        },
+        "attributes": {
+          "type": "object",
+          "description": "Named appearance attributes, each in a FactEnvelope so narration cannot quietly restate one (the eye-color drift counterexample). Locked attributes reject model-derived edits (INV-007).",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$"
+          },
+          "additionalProperties": {
+            "$ref": "urn:rce:schema:fact-envelope"
+          },
+          "maxProperties": 128
+        }
+      },
+      "required": [
+        "attributes"
+      ],
+      "additionalProperties": false
+    },
+    "anatomy": {
+      "type": "object",
+      "description": "References a pinned preset release plus explicit structure overrides. A structure definition is not evidence of possession (INV-016).",
+      "properties": {
+        "preset_release_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "structure_overrides": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "type": "object",
+            "properties": {
+              "structure_definition_id": {
+                "$ref": "urn:rce:schema:common#/$defs/Uuid"
+              },
+              "presence": {
+                "enum": [
+                  "present",
+                  "absent",
+                  "unknown",
+                  "variable",
+                  "not_applicable"
+                ]
+              },
+              "provenance": {
+                "$ref": "urn:rce:schema:common#/$defs/Provenance"
+              }
+            },
+            "required": [
+              "structure_definition_id",
+              "presence",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "preset_release_id"
+      ],
+      "additionalProperties": false
+    },
+    "orientation": {
+      "type": "object",
+      "description": "Independent of relationship configuration: monogamy is not a substitute for attraction (INV-014).",
+      "properties": {
+        "attraction": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/ShortText"
+          }
+        },
+        "notes": {
+          "$ref": "urn:rce:schema:common#/$defs/MediumText"
+        }
+      },
+      "additionalProperties": false
+    },
+    "terminology": {
+      "type": "object",
+      "description": "Preferred vocabulary maps to canonical structure IDs. Naming a structure does not create it (INV-015).",
+      "properties": {
+        "preferred_terms": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": {
+                "$ref": "urn:rce:schema:common#/$defs/ShortText"
+              },
+              "canonical_structure_id": {
+                "$ref": "urn:rce:schema:common#/$defs/Uuid"
+              }
+            },
+            "required": [
+              "term",
+              "canonical_structure_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "relationship_config": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "notes": {
+          "$ref": "urn:rce:schema:common#/$defs/MediumText"
+        }
+      },
+      "additionalProperties": false
+    },
+    "values": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,40}$"
+          },
+          "statement": {
+            "$ref": "urn:rce:schema:common#/$defs/MediumText"
+          },
+          "mutability": {
+            "enum": [
+              "fixed",
+              "evidence_revisable"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "statement",
+          "mutability"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "traits": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,40}$"
+          },
+          "name": {
+            "$ref": "urn:rce:schema:common#/$defs/ShortText"
+          },
+          "intensity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "contextual_expressions": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "$ref": "urn:rce:schema:common#/$defs/MediumText"
+            }
+          },
+          "anti_expressions": {
+            "type": "array",
+            "maxItems": 32,
+            "items": {
+              "$ref": "urn:rce:schema:common#/$defs/MediumText"
+            }
+          },
+          "mutability": {
+            "enum": [
+              "fixed",
+              "evidence_revisable"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "mutability"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "voice": {
+      "type": "object",
+      "properties": {
+        "formality": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rhythm": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        },
+        "humor": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        },
+        "allowed_phrases": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/ShortText"
+          }
+        },
+        "avoided_phrases": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/ShortText"
+          }
+        },
+        "positive_examples": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/MediumText"
+          }
+        },
+        "negative_examples": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/MediumText"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "preferences": {
+      "type": "object",
+      "properties": {
+        "authored": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/MediumText"
+          }
+        },
+        "boundaries": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/MediumText"
+          }
+        }
+      },
+      "description": "Boundaries are separate from personality descriptors and are never a consent record. Current willingness is a runtime record, not part of a release (INV-030, INV-033).",
+      "additionalProperties": false
+    },
+    "goals": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{1,40}$"
+          },
+          "statement": {
+            "$ref": "urn:rce:schema:common#/$defs/MediumText"
+          },
+          "visibility": {
+            "enum": [
+              "public",
+              "private"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "statement",
+          "visibility"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "agency": {
+      "type": "object",
+      "description": "Player-control permissions (INV-035: fiction never overrides these).",
+      "properties": {
+        "player_may_control": {
+          "type": "boolean"
+        },
+        "player_may_narrate_actions": {
+          "type": "boolean"
+        },
+        "notes": {
+          "$ref": "urn:rce:schema:common#/$defs/MediumText"
+        }
+      },
+      "required": [
+        "player_may_control"
+      ],
+      "additionalProperties": false
+    },
+    "x_ext": {
+      "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    }
+  },
+  "required": [
+    "id",
+    "core_id",
+    "owner_id",
+    "schema_version",
+    "revision",
+    "created_at",
+    "updated_at",
+    "title",
+    "visibility",
+    "pins",
+    "age",
+    "identity",
+    "appearance",
+    "anatomy",
+    "agency"
+  ],
+  "additionalProperties": false
+}
