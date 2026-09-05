@@ -161,9 +161,9 @@ Each counterexample states the failure a naive implementation produces, the inva
 
 ## Unresolved
 
-These are recorded blockers, not defaults chosen by an agent. Each needs an owner decision before the dependent story is implemented.
+These are recorded blockers, not defaults chosen by an agent. Each needs an owner decision before the dependent story is implemented. A resolved item keeps its number and stays listed with its decision and owning story, so the reasoning survives and existing references do not shift.
 
-1. **Gate naming is inconsistent across contracts.** ADR-006 names the five checks "account access, fictional adult eligibility, player content authorization, character current willingness, provider capability"; docs/implementation/README.md names them "adult-user access, fictional adulthood, content authorization, current willingness, provider permission". INV-030 adopts the ADR-006 set as canonical. The other spellings should be reconciled when RCE-053 fixes the DTO field names, so the API, the docs and the tests use one vocabulary.
+1. **Gate naming — RESOLVED 2026-09-05, owned by RCE-053.** ADR-006 named the five checks "account access, fictional adult eligibility, player content authorization, character current willingness, provider capability" while docs/implementation/README.md named them "adult-user access, fictional adulthood, content authorization, current willingness, provider permission". The owner has confirmed ADR-006 as canonical and assigned reconciliation to RCE-053, which carries the mapping checklist. INV-030 already uses the ADR-006 set. RCE-053 maps each legacy name to its canonical name and final wire field, reconciles README, OpenAPI, DTOs, generated clients and fixtures in one change, and adds drift regression coverage. This is naming cleanup: the meaning and enforcement of each check are unchanged, and no dependent controller may adopt a competing name.
 
 2. **"Required deterministic memory facts" is undefined.** ADR-004 permits some memory facts to commit inside the turn transaction while expensive projections run afterwards, but no rule says which facts qualify. Until it is defined, INV-023 cannot be tested precisely: the boundary between the atomic set and the deferred set is unspecified. RCE-025 and RCE-028 depend on this.
 
