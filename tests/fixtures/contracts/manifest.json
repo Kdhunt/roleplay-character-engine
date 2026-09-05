@@ -1,0 +1,165 @@
+{
+  "format": "rce-fixture-manifest",
+  "schema_version": 1,
+  "story": "RCE-053 task 1 of 3: shared application contracts",
+  "note": "Each entry names the schema it is checked against. A '#' suffix selects a $def inside that schema. Executable validation arrives with RCE-061 tooling; until then these are unvalidated artifacts.",
+  "schema_dir": "packages/contracts/schema",
+  "cases": [
+    {
+      "file": "valid/api/error.stale-revision.json",
+      "schema": "api-error",
+      "expect": "valid",
+      "why": "Canonical error envelope with safe field diagnostics."
+    },
+    {
+      "file": "valid/api/list-response.json",
+      "schema": "api-envelope#/$defs/ListResponse",
+      "expect": "valid",
+      "why": "Empty list terminates cleanly."
+    },
+    {
+      "file": "valid/api/list-response.paged.json",
+      "schema": "api-envelope#/$defs/ListResponse",
+      "expect": "valid",
+      "why": "Opaque cursor accompanies has_more."
+    },
+    {
+      "file": "valid/api/async-operation.succeeded.json",
+      "schema": "api-envelope#/$defs/AsyncOperation",
+      "expect": "valid",
+      "why": "Succeeded operation references its resource."
+    },
+    {
+      "file": "valid/gates/report.permitted.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "valid",
+      "why": "All six gates reported and satisfied."
+    },
+    {
+      "file": "valid/gates/report.denied-willingness.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "valid",
+      "why": "One gate denies with a stable reason; the rest still report."
+    },
+    {
+      "file": "valid/turn/input.minimal.json",
+      "schema": "turn#/$defs/TurnInput",
+      "expect": "valid",
+      "why": "Minimal turn input with expected scene revision."
+    },
+    {
+      "file": "valid/turn/view.committed.json",
+      "schema": "turn#/$defs/TurnView",
+      "expect": "valid",
+      "why": "Committed turn carries revision and message ids."
+    },
+    {
+      "file": "valid/turn/view.failed-refused.json",
+      "schema": "turn#/$defs/TurnView",
+      "expect": "valid",
+      "why": "A provider refusal is a typed turn outcome, not an HTTP error."
+    },
+    {
+      "file": "valid/turn/candidate.minimal.json",
+      "schema": "turn#/$defs/CandidateTurn",
+      "expect": "valid",
+      "why": "Minimal candidate with no claims."
+    },
+    {
+      "file": "valid/turn/candidate.narrator.json",
+      "schema": "turn#/$defs/CandidateTurn",
+      "expect": "valid",
+      "why": "A narrator utterance declares itself and needs no speaker instance."
+    },
+    {
+      "file": "valid/turn/validation.rejected.json",
+      "schema": "turn#/$defs/ValidationResult",
+      "expect": "valid",
+      "why": "Rejection cites the invariant it violates."
+    },
+    {
+      "file": "valid/sse/turn.committed.json",
+      "schema": "sse-event",
+      "expect": "valid",
+      "why": "Committed event carries validated utterances only."
+    },
+    {
+      "file": "valid/sse/resync.required.json",
+      "schema": "sse-event",
+      "expect": "valid",
+      "why": "Expired cursor instructs a bounded fetch."
+    },
+    {
+      "file": "invalid/api/error.missing-request-id.json",
+      "schema": "api-error",
+      "expect": "invalid",
+      "why": "Every error is traceable; request_id is mandatory."
+    },
+    {
+      "file": "invalid/api/error.unknown-code.json",
+      "schema": "api-error",
+      "expect": "invalid",
+      "why": "Error codes are a closed set."
+    },
+    {
+      "file": "invalid/api/list-response.cursor-without-more.json",
+      "schema": "api-envelope#/$defs/ListResponse",
+      "expect": "invalid",
+      "why": "A cursor without has_more is contradictory."
+    },
+    {
+      "file": "invalid/api/async-operation.succeeded-with-error.json",
+      "schema": "api-envelope#/$defs/AsyncOperation",
+      "expect": "invalid",
+      "why": "A succeeded operation cannot also carry an error."
+    },
+    {
+      "file": "invalid/gates/report.five-evaluations.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "invalid",
+      "why": "Every gate reports; an omitted gate cannot pass as satisfied."
+    },
+    {
+      "file": "invalid/gates/report.denied-without-reason.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "invalid",
+      "why": "A denial must say why."
+    },
+    {
+      "file": "invalid/gates/report.relationship-reason.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "invalid",
+      "why": "Relationship status is not a gate reason (INV-031)."
+    },
+    {
+      "file": "invalid/turn/candidate.claim-canonical.json",
+      "schema": "turn#/$defs/CandidateTurn",
+      "expect": "invalid",
+      "why": "An extracted claim is always derived; it cannot mint canon (INV-004)."
+    },
+    {
+      "file": "invalid/turn/utterance.character-without-speaker.json",
+      "schema": "turn#/$defs/CandidateTurn",
+      "expect": "invalid",
+      "why": "A character utterance must attribute a speaker."
+    },
+    {
+      "file": "invalid/turn/view.failed-without-code.json",
+      "schema": "turn#/$defs/TurnView",
+      "expect": "invalid",
+      "why": "A failed turn must carry a typed failure code."
+    },
+    {
+      "file": "invalid/turn/input.five-addressees.json",
+      "schema": "turn#/$defs/TurnInput",
+      "expect": "invalid",
+      "why": "At most four AI instances per conversation (ADR-001)."
+    },
+    {
+      "file": "invalid/sse/committed-missing-utterances.json",
+      "schema": "sse-event",
+      "expect": "invalid",
+      "why": "A committed event without utterances is not a commit."
+    }
+  ]
+}

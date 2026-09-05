@@ -1,0 +1,35 @@
+{
+  "evaluations": [
+    {
+      "gate": "account_access",
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
+    },
+    {
+      "gate": "real_user_assurance",
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
+    },
+    {
+      "gate": "fictional_adult_eligibility",
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
+    },
+    {
+      "gate": "player_content_authorization",
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
+    },
+    {
+      "gate": "character_current_willingness",
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
+    },
+    {
+      "gate": "provider_capability",
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
+    }
+  ],
+  "permitted": true
+}

@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:api-envelope",
+  "title": "Response envelopes",
+  "description": "Shared response shapes for every /v1 endpoint, per API.md. RCE-053. A resource response carries data and meta; a list carries data and page. Pagination cursors are opaque and scope-bound — a cursor from another scope is rejected, not silently reinterpreted.",
+  "$defs": {
+    "Meta": {
+      "type": "object",
+      "properties": {
+        "request_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision",
+          "description": "Present only for versioned resources. Never another owner's revision (API.md)."
+        }
+      },
+      "required": [
+        "request_id"
+      ],
+      "additionalProperties": false
+    },
+    "Page": {
+      "type": "object",
+      "properties": {
+        "next_cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Opaque. Absent when has_more is false."
+        },
+        "has_more": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "has_more"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "has_more": {
+                "const": false
+              }
+            },
+            "required": [
+              "has_more"
+            ]
+          },
+          "then": {
+            "properties": {
+              "next_cursor": false
+            }
+          }
+        }
+      ]
+    },
+    "ResourceResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "object"
+        },
+        "meta": {
+          "$ref": "urn:rce:schema:api-envelope#/$defs/Meta"
+        }
+      },
+      "required": [
+        "data",
+        "meta"
+      ],
+      "additionalProperties": false
+    },
+    "ListResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "array",
+          "maxItems": 100
+        },
+        "page": {
+          "$ref": "urn:rce:schema:api-envelope#/$defs/Page"
+        },
+        "meta": {
+          "$ref": "urn:rce:schema:api-envelope#/$defs/Meta"
+        }
+      },
+      "required": [
+        "data",
+        "page",
+        "meta"
+      ],
+      "additionalProperties": false
+    },
+    "PaginationParams": {
+      "type": "object",
+      "description": "limit defaults to 20 and caps at 100 (API.md).",
+      "properties": {
+        "cursor": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        }
+      },
+      "additionalProperties": false
+    },
+    "AsyncOperation": {
+      "type": "object",
+      "description": "Returned by write endpoints whose work is not complete on response. Terminal states carry either a resource reference or an error, never both and never neither.",
+      "properties": {
+        "operation_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "resource_ref": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "error": {
+          "$ref": "urn:rce:schema:api-error"
+        },
+        "created_at": {
+          "$ref": "urn:rce:schema:common#/$defs/Utc"
+        },
+        "updated_at": {
+          "$ref": "urn:rce:schema:common#/$defs/Utc"
+        }
+      },
+      "required": [
+        "operation_id",
+        "state",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "succeeded"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "resource_ref"
+            ],
+            "properties": {
+              "resource_ref": true,
+              "error": false
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "failed"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "error"
+            ],
+            "properties": {
+              "error": true,
+              "resource_ref": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}

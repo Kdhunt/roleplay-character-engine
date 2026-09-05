@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:sse-event",
+  "title": "Conversation SSE events",
+  "description": "The five event types on GET /v1/conversations/{id}/events, per API.md. RCE-053. Every event carries a durable id scoped to the conversation and branch, so Last-Event-ID resumes deterministically. No unvalidated model token event exists in v1: a client that receives turn.committed is receiving already-canon output (ADR-005, INV-028).",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Durable sequence scoped to conversation and branch. Monotonic within that scope, not globally."
+    },
+    "type": {
+      "enum": [
+        "turn.status",
+        "turn.committed",
+        "turn.failed",
+        "turn.cancelled",
+        "resync.required"
+      ]
+    },
+    "conversation_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "branch_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "emitted_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "type",
+    "conversation_id",
+    "branch_id",
+    "emitted_at",
+    "data"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "turn.status"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "turn_id": {
+                "$ref": "urn:rce:schema:common#/$defs/Uuid"
+              },
+              "state": {
+                "$ref": "urn:rce:schema:turn#/$defs/TurnState"
+              }
+            },
+            "required": [
+              "turn_id",
+              "state"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "turn.committed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Carries the committed result only: turn, resulting scene revision, message ids and the validated utterances.",
+            "properties": {
+              "turn_id": {
+                "$ref": "urn:rce:schema:common#/$defs/Uuid"
+              },
+              "scene_revision": {
+                "$ref": "urn:rce:schema:common#/$defs/Revision"
+              },
+              "message_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "urn:rce:schema:common#/$defs/Uuid"
+                },
+                "minItems": 1,
+                "maxItems": 32
+              },
+              "utterances": {
+                "type": "array",
+                "items": {
+                  "$ref": "urn:rce:schema:turn#/$defs/Utterance"
+                },
+                "minItems": 1,
+                "maxItems": 16
+              }
+            },
+            "required": [
+              "turn_id",
+              "scene_revision",
+              "message_ids",
+              "utterances"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "turn.failed"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "turn_id": {
+                "$ref": "urn:rce:schema:common#/$defs/Uuid"
+              },
+              "failure_code": {
+                "$ref": "urn:rce:schema:turn#/$defs/TurnFailureCode"
+              }
+            },
+            "required": [
+              "turn_id",
+              "failure_code"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "turn.cancelled"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "turn_id": {
+                "$ref": "urn:rce:schema:common#/$defs/Uuid"
+              }
+            },
+            "required": [
+              "turn_id"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "type": {
+            "const": "resync.required"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Sent when a Last-Event-ID cursor has expired. Instructs a bounded canonical fetch rather than replaying unbounded history.",
+            "properties": {
+              "reason": {
+                "enum": [
+                  "cursor_expired",
+                  "branch_switched",
+                  "access_revalidated"
+                ]
+              },
+              "fetch_from_revision": {
+                "$ref": "urn:rce:schema:common#/$defs/Revision"
+              }
+            },
+            "required": [
+              "reason",
+              "fetch_from_revision"
+            ],
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ]
+}

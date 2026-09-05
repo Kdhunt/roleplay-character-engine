@@ -1,0 +1,16 @@
+{
+  "outcome": "rejected",
+  "issues": [
+    {
+      "code": "LOCKED_ATTRIBUTE_CONFLICT",
+      "severity": "error",
+      "invariant": "INV-007",
+      "offending_span": {
+        "start": 41,
+        "end": 52
+      },
+      "expected_fact": "eye_color = green",
+      "repair_hint": "Restate without contradicting the locked attribute."
+    }
+  ]
+}
