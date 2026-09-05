@@ -83,6 +83,12 @@ Model/refusal behavior is a typed adapter outcome. A refusal cannot alter canon 
 
 Disconnect, browser close and room departure are not scene teardown. Scenes persist for resume. A user-approved ephemeral environment may reset on explicit teardown/expiry; ordinary persistent inventory and promoted facts survive. Reset previews affected entities and cannot clone or silently delete owned objects. Core, scenario, scene, momentary and derived lifetimes are explicit per property.
 
+## ADR-008: normative invariant register
+
+INVARIANTS.md is the single normative rule set for authority, character layer boundaries, axis independence, ownership and continuity isolation, atomic state change, eligibility gating and state lifetime. Each rule carries a stable INV-### identifier so tests, reviews and pull requests cite a rule rather than restating it. Where ARCHITECTURE.md, DOMAIN.md or API.md is ambiguous on one of those subjects, the register decides; where the register is silent, the owning contract decides. Adding, removing or weakening an invariant is a contract change and cannot be done as a side effect of implementing a story.
+
+The register carries an invariant-to-test matrix binding every rule to the mandatory regression fixtures in QUALITY.md and to the test stories that own them, RCE-020, RCE-021, RCE-041 and RCE-083. It does not introduce a parallel test list: a rule with no fixture is recorded as a gap in QUALITY.md rather than left implicit. Four counterexamples — eye-color drift, the vanishing watch, hidden-knowledge leakage and scenario override bleed — are normative and must each stay failing until the corresponding fixture exists. Contradictions found between existing contracts are recorded in the register's Unresolved section as owner decisions; agents do not resolve them by choosing a default. This ADR records a reviewed specification and asserts nothing about implementation.
+
 ## Module layout and commands
 
 apps/api: auth, controllers, validation and service composition. apps/web: screens and state presentation only. apps/worker: generation and projection orchestration. packages/domain: entities, reducers, permission-aware services and validators. packages/contracts: shared schemas, OpenAPI and errors. packages/client: typed calls. db/migrations: ordered singular-table migrations. tests/fixtures: synthetic structured examples. docs/implementation: source-linked story contracts.
