@@ -1,0 +1,26 @@
+name: Story contract checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  story-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - name: Validate story references and dependencies
+        run: node scripts/check-story-plan.mjs
+      - name: Test the planning validator
+        run: node --test scripts/check-story-plan.test.mjs

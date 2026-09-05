@@ -1,42 +1,38 @@
 # Roleplay Character Engine
 
-A persistent character, memory, anatomy, relationship, and scene state engine for AI roleplay chat.
+An API-first character, continuity and memory service for a complete adult-user roleplay application. The implementation plan covers accounts, a curated character catalog, private character authoring, scenario overrides, multi-character conversation, privacy and operations.
 
-The engine treats structured state as canonical truth and generated prose as a proposed transaction. Character identity, anatomy, appearance, terminology, knowledge, beliefs, relationships, memories, and scene state remain separate domains with explicit precedence and validation rules.
+## Current state
 
-## Core principles
+This repository contains the implementation specification and coding-agent handoff. It is not yet a runnable chat application. The first executable application task is RCE-061: workspace bootstrap. Application build/test commands described in the plan are deliverables until that task implements them.
 
-1. Structured state is canonical. Prose describes state but does not directly own it.
-2. Explicit user canon outranks model inference.
-3. Unknown remains unknown unless policy explicitly permits inference or invention.
-4. Identity, gender, pronouns, anatomy, appearance, and terminology are independent dimensions.
-5. Character specific knowledge and memory are isolated to prevent accidental omniscience.
-6. Generated turns are validated before state changes are committed.
-7. Memory retrieval is bounded, relevance driven, and source traceable.
-8. Event sourcing preserves history, rollback, branching, and retcons.
+The audited Trello plan contains 89 active cards. RCE-057 was merged into RCE-010 to avoid duplicate spatial models. Trello controls delivery status; this repository contains versioned implementation contracts and a dated story snapshot. GitHub issues are not automatically mirrored or synchronized with Trello.
 
-## Initial architecture
+## Start implementing
 
-- TypeScript on Node.js
-- MCP server as the controlled interface into roleplay state
-- PostgreSQL for canonical relational state
-- Event sourced timeline for scene and turn history
-- Vector retrieval for memory relevance only, never as canonical truth
-- Explicit validation and transaction boundaries around generated narrative
+Read [AGENTS.md](AGENTS.md), then the [implementation overview](docs/implementation/README.md). The [story index](docs/implementation/STORIES.md) and [machine-readable plan](docs/implementation/story-plan.json) contain stable IDs, source cards, dependencies and acceptance outcomes.
 
-## Primary domains
+These planning tools run with Node 22 or newer and require no package install:
 
-- Character identity and archetypes
-- Anatomy graph, presets, and overrides
-- Character agency and player control
-- Scene geometry, clothing, held objects, and contact
-- Character specific memory and beliefs
-- Directional multidimensional relationships
-- World truth and knowledge boundaries
-- Context compilation and memory retrieval
-- Continuity validation and repair
-- Timeline branching, save points, and retcons
+```sh
+node scripts/check-story-plan.mjs
+node --test scripts/check-story-plan.test.mjs
+node scripts/show-story.mjs RCE-061
+node scripts/show-story.mjs --order
+```
 
-## Project tracking
+They validate planning metadata, not application functionality. The application target runtime is Node 24 LTS.
 
-The implementation backlog is mirrored from the Trello board: Roleplay Character Management & Reference System.
+Agent entrypoints are AGENTS.md, CLAUDE.md, .cursor/rules/project.mdc and .github/copilot-instructions.md. Each directs the agent to the same contracts. Implement bounded stories with tests and actual evidence; do not treat an epic as a single assignment.
+
+## Product scope
+
+Responsive Vue web application and installable PWA first, backed by a TypeScript/Express API, PostgreSQL, OIDC authentication and a separate worker. Many independent accounts are supported; each private conversation has one human persona and one to four AI characters. Existing character releases are immutable and scenario overrides never mutate another user's history.
+
+Explicit consenting-adult roleplay is a first-class data requirement. Real-user eligibility, fictional character adulthood, player content authorization, current willingness and provider permission are independently enforced. Native-store approval is not assumed. Production distribution, geography, age assurance, hosting/model policies, privacy/retention and operating budgets require RCE-089 approval.
+
+Native applications, payments, public creator publishing, human multiplayer, generated voice/images and autonomous offscreen simulation are explicitly deferred. The API is designed to support future clients without duplicating domain rules.
+
+[Trello board](https://trello.com/b/IB7rrPuX/roleplay-character-management-reference-system)
+
+See the existing [LICENSE](LICENSE); this audit does not change it.

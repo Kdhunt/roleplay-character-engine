@@ -1,0 +1,8 @@
+---
+description: Roleplay Character Engine architecture, story contracts and verification requirements
+alwaysApply: true
+---
+
+@AGENTS.md
+
+Read docs/implementation/STORIES.md for the requested RCE story and follow its dependency contract. Do not invent application behavior absent from the shared specifications. Record unresolved scope decisions explicitly and never silently bypass a launch gate.
