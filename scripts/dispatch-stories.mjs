@@ -16,13 +16,20 @@ const DESIGN_AGENT = 'claude';
 const GATE_AGENT = 'owner';
 const LABEL_COLOR = { rce: '3E6D9C', agent: 'A6572E', module: '6E675E', milestone: '2A2724' };
 
+/** Workflow states that represent work actually available for handoff (QUALITY.md). */
+export const DISPATCHABLE_STATES = new Set(['Ready for Design', 'Ready for Development']);
+/** The only state that means a story is finished. Trello owns delivery status (AGENTS.md). */
+export const COMPLETE_STATE = 'Done';
+
 const API = 'https://api.github.com';
 const usage = `Usage: node scripts/dispatch-stories.mjs [--order] [--preview] [--create] [--limit N]
                                        [--module M] [--milestone M0] [--agent A] [--story RCE-061]
                                        [--repo owner/name] [--assume-done RCE-001,...] [--assignee login]
-Dry run by default. --create needs GITHUB_TOKEN with issue write access.`;
+Dry run by default. --create needs GITHUB_TOKEN with issue write access.
+Live Trello status is used when TRELLO_API_KEY, TRELLO_TOKEN and TRELLO_BOARD_ID are set;
+otherwise the repository snapshot is used and the fallback is disclosed.`;
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const opts = { assumeDone: [] };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -30,7 +37,6 @@ function parseArgs(argv) {
     if (arg === '--order') opts.order = true;
     else if (arg === '--preview') opts.preview = true;
     else if (arg === '--create') opts.create = true;
-    else if (arg === '--ensure-labels') opts.ensureLabels = true;
     else if (arg === '--limit') opts.limit = Number(value());
     else if (arg === '--module') opts.module = value();
     else if (arg === '--milestone') opts.milestone = value();
@@ -46,20 +52,38 @@ function parseArgs(argv) {
   return opts;
 }
 
-const agentFor = story => story.kind === 'release_gate' ? GATE_AGENT
+export const agentFor = story => story.kind === 'release_gate' ? GATE_AGENT
   : story.kind === 'design' ? DESIGN_AGENT
   : AGENT_BY_MODULE[story.module] ?? 'unassigned';
 
 const labelsFor = story => ['rce', `agent:${agentFor(story)}`, `module:${story.module}`, `milestone:${story.milestone}`];
 const titleFor = story => `${story.id}: ${story.title}`;
 
-function bodyFor(plan, story, blockedBy) {
-  const deps = story.depends_on.length
-    ? story.depends_on.map(d => `- ${d}${blockedBy.includes(d) ? ' — NOT yet done' : ' — done'}`).join('\n')
-    : '- none';
+/**
+ * Decide what may be handed off. Two rules the reviewer was right to insist on:
+ * dependency satisfaction alone is not readiness, and a closed issue is not completion.
+ * Pure so it can be tested without a network or a repository.
+ */
+export function classify({ stories, statusOf, done, issues, dispatchable = DISPATCHABLE_STATES }) {
+  const ready = [], blocked = [], unscheduled = [], dispatched = [];
+  for (const story of stories) {
+    if (story.kind === 'epic') continue;                       // AGENTS.md: never assign a whole epic
+    if (done.has(story.id)) continue;
+    if (issues.has(story.id)) { dispatched.push([story, issues.get(story.id)]); continue; }
+    const blockedBy = story.depends_on.filter(d => !done.has(d));
+    if (blockedBy.length) { blocked.push([story, blockedBy]); continue; }
+    const status = statusOf(story);
+    if (!dispatchable.has(status)) { unscheduled.push([story, status]); continue; }
+    ready.push([story, []]);
+  }
+  return { ready, blocked, unscheduled, dispatched };
+}
+
+function bodyFor(plan, story, source) {
+  const deps = story.depends_on.length ? story.depends_on.map(d => `- ${d}`).join('\n') : '- none';
   return `**${story.id}** · ${story.kind} · ${story.milestone} · module \`${story.module}\`
 Source card: ${story.source}
-Repository snapshot: ${plan.as_of} (Trello is delivery status; this issue reflects the snapshot)
+Delivery status: ${source}
 
 ## Dependencies
 ${deps}
@@ -102,6 +126,21 @@ async function github(path, { method = 'GET', body, token } = {}) {
   return response.status === 204 ? null : response.json();
 }
 
+/** Live delivery status keyed by Trello short link, or null when access is unavailable. */
+export async function fetchTrelloStatus(env = process.env, fetchImpl = fetch) {
+  const { TRELLO_API_KEY: key, TRELLO_TOKEN: token, TRELLO_BOARD_ID: board } = env;
+  if (!key || !token || !board) return null;
+  const headers = { authorization: `OAuth oauth_consumer_key="${key}", oauth_token="${token}"` };
+  const get = async (path) => {
+    const r = await fetchImpl(`https://api.trello.com/1/boards/${board}/${path}`, { headers });
+    if (!r.ok) throw new Error(`Trello ${path} failed: ${r.status}`);
+    return r.json();
+  };
+  const [lists, cards] = await Promise.all([get('lists'), get('cards?fields=shortLink,idList')]);
+  const listName = new Map(lists.map(l => [l.id, l.name]));
+  return new Map(cards.map(c => [c.shortLink, listName.get(c.idList)]));
+}
+
 /** Existing issues keyed by RCE id, so re-running never opens a duplicate. */
 async function loadIssues(repo, token) {
   const byStory = new Map();
@@ -132,9 +171,9 @@ async function ensureLabels(repo, token, needed) {
   }
 }
 
-try {
+async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  if (opts.help) { console.log(usage); process.exit(0); }
+  if (opts.help) { console.log(usage); return; }
 
   const plan = hydratePlan(JSON.parse(readFileSync(new URL('../docs/implementation/story-plan.json', import.meta.url), 'utf8')));
   const result = validatePlan(plan);
@@ -151,59 +190,67 @@ try {
     for (const story of ordered.filter(matches)) {
       console.log(`${story.id}  ${story.milestone}  ${agentFor(story).padEnd(10)} ${story.module.padEnd(12)} ${story.title}`);
     }
-    process.exit(0);
+    return;
   }
+
+  const live = await fetchTrelloStatus().catch(err => { console.log(`Trello unavailable (${err.message}); using snapshot.`); return null; });
+  const source = live ? 'live Trello' : `repository snapshot ${plan.as_of}`;
+  console.log(`Delivery status source: ${source}.`);
+  if (!live) console.log('No live Trello access: completion is taken only from --assume-done, never inferred.');
+
+  const shortLink = story => story.source.split('/')[4];
+  const statusOf = story => (live ? live.get(shortLink(story)) : story.status) ?? story.status;
 
   const repo = opts.repo ?? plan.repository;
   if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) throw new Error(`Cannot determine repository: ${repo}`);
   const token = process.env.GITHUB_TOKEN;
-  const online = Boolean(token);
   if (opts.create && !token) throw new Error('--create needs GITHUB_TOKEN with issue write access');
 
-  const issues = online ? await loadIssues(repo, token) : new Map();
-  if (!online) console.log('No GITHUB_TOKEN: reporting dependency readiness from the plan alone.\n');
+  const issues = token ? await loadIssues(repo, token) : new Map();
+  if (!token) console.log('No GITHUB_TOKEN: existing issues are not checked.');
 
+  // Completion comes from delivery status or an explicit override. A closed issue is NOT completion:
+  // closed can mean cancelled, duplicate or abandoned, and Trello owns delivery status (AGENTS.md).
   const done = new Set(opts.assumeDone);
-  for (const [id, issue] of issues) if (issue.state === 'closed') done.add(id);
+  if (live) for (const story of ordered) if (statusOf(story) === COMPLETE_STATE) done.add(story.id);
 
-  const ready = [], blocked = [], dispatched = [];
-  for (const story of ordered) {
-    if (story.kind === 'epic') continue;                       // AGENTS.md: never assign a whole epic
-    if (done.has(story.id)) continue;
-    if (issues.has(story.id)) { dispatched.push([story, issues.get(story.id)]); continue; }
-    const blockedBy = story.depends_on.filter(d => !done.has(d));
-    (blockedBy.length ? blocked : ready).push([story, blockedBy]);
+  const { ready, blocked, unscheduled, dispatched } = classify({ stories: ordered, statusOf, done, issues });
+
+  const closedButNotComplete = [...issues].filter(([id, i]) => i.state === 'closed' && !done.has(id));
+  if (closedButNotComplete.length) {
+    console.log(`\n${closedButNotComplete.length} issue(s) closed without a complete delivery status; not treated as done:`);
+    for (const [id, i] of closedButNotComplete) console.log(`  ${id}  #${i.number}`);
   }
 
   const show = (label, rows, render) => {
     const filtered = rows.filter(([story]) => matches(story));
-    console.log(`${label} (${filtered.length})`);
+    console.log(`\n${label} (${filtered.length})`);
     for (const row of filtered) console.log(`  ${render(row)}`);
-    console.log('');
   };
   show('DISPATCHED', dispatched, ([s, i]) => `${s.id}  #${i.number}  ${agentFor(s).padEnd(10)} ${s.title}`);
   show('READY', ready, ([s]) => `${s.id}  ${s.milestone}  ${agentFor(s).padEnd(10)} ${s.module.padEnd(12)} ${s.title}`);
+  show('NOT SCHEDULED', unscheduled, ([s, st]) => `${s.id}  status "${st}" is not dispatchable`);
   show('BLOCKED', blocked, ([s, b]) => `${s.id}  waiting on ${b.join(', ')}`);
 
   if (!opts.create) {
-    if (opts.preview) for (const [story, blockedBy] of ready.filter(([s]) => matches(s))) {
-      console.log(`${'='.repeat(72)}\n${titleFor(story)}\nlabels: ${labelsFor(story).join(', ')}\n${'-'.repeat(72)}\n${bodyFor(plan, story, blockedBy)}\n`);
+    if (opts.preview) for (const [story] of ready.filter(([s]) => matches(s))) {
+      console.log(`\n${'='.repeat(72)}\n${titleFor(story)}\nlabels: ${labelsFor(story).join(', ')}\n${'-'.repeat(72)}\n${bodyFor(plan, story, source)}`);
     }
-    console.log(`Dry run. ${ready.filter(([s]) => matches(s)).length} story/stories would be opened as issues in ${repo}.`);
+    console.log(`\nDry run. ${ready.filter(([s]) => matches(s)).length} story/stories would be opened as issues in ${repo}.`);
     console.log('Re-run with --create (and GITHUB_TOKEN) to open them.');
-    process.exit(0);
+    return;
   }
 
   const queue = ready.filter(([story]) => matches(story)).slice(0, opts.limit ?? Infinity);
-  if (!queue.length) { console.log('Nothing ready to dispatch.'); process.exit(0); }
+  if (!queue.length) { console.log('Nothing ready to dispatch.'); return; }
 
   await ensureLabels(repo, token, [...new Set(queue.flatMap(([story]) => labelsFor(story)))]);
-  for (const [story, blockedBy] of queue) {
+  for (const [story] of queue) {
     const issue = await github(`/repos/${repo}/issues`, {
       method: 'POST', token,
       body: {
         title: titleFor(story),
-        body: bodyFor(plan, story, blockedBy),
+        body: bodyFor(plan, story, source),
         labels: labelsFor(story),
         ...(opts.assignee ? { assignees: [opts.assignee] } : {}),
       },
@@ -211,4 +258,8 @@ try {
     console.log(`opened #${issue.number}  ${story.id}  -> ${agentFor(story)}`);
   }
   console.log(`\n${queue.length} issue(s) opened. Assignment to a specific assistant is per-vendor: labels only here.`);
-} catch (error) { console.error(error.message); process.exitCode = 1; }
+}
+
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop())) {
+  main().catch(error => { console.error(error.message); process.exitCode = 1; });
+}
