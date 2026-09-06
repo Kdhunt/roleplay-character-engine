@@ -1,0 +1,13 @@
+{
+  "client_message_id": "77777777-7777-4777-8777-777777777777",
+  "text": "Everyone, at once.",
+  "persona_id": "66666666-6666-4666-8666-666666666666",
+  "expected_scene_revision": 12,
+  "addressee_instance_ids": [
+    "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+  ]
+}

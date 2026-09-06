@@ -1,0 +1,27 @@
+{
+  "utterances": [
+    {
+      "kind": "character",
+      "speaker_instance_id": "44444444-4444-4444-8444-444444444444",
+      "text": "Her eyes are blue."
+    }
+  ],
+  "actions": [],
+  "claims": [
+    {
+      "path": "appearance.eye_color",
+      "value": "blue",
+      "authority": "canonical",
+      "source_span": {
+        "start": 0,
+        "end": 18
+      }
+    }
+  ],
+  "unresolved_references": [],
+  "model_revision": "fixture-deterministic-1",
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

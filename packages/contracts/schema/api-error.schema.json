@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:api-error",
+  "title": "ApiError",
+  "description": "The single error shape for every /v1 endpoint, per API.md. RCE-053. details carries safe field and constraint diagnostics only — never stack traces, never secret canonical facts, never another owner's revision.",
+  "type": "object",
+  "properties": {
+    "error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "urn:rce:schema:api-error#/$defs/ErrorCode"
+        },
+        "message": {
+          "$ref": "urn:rce:schema:common#/$defs/MediumText"
+        },
+        "request_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "details": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "constraint": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "hint": {
+                "$ref": "urn:rce:schema:common#/$defs/ShortText"
+              }
+            },
+            "required": [
+              "field",
+              "constraint"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "request_id",
+        "retryable"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "error"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "ErrorCode": {
+      "enum": [
+        "MALFORMED_REQUEST",
+        "UNAUTHENTICATED",
+        "FORBIDDEN",
+        "NOT_FOUND",
+        "STALE_REVISION",
+        "IDEMPOTENCY_CONFLICT",
+        "STATE_CONFLICT",
+        "PAYLOAD_TOO_LARGE",
+        "SCHEMA_REJECTED",
+        "DOMAIN_REJECTED",
+        "PRECONDITION_REQUIRED",
+        "QUOTA_EXCEEDED",
+        "DEPENDENCY_UNAVAILABLE",
+        "FRESHNESS_UNAVAILABLE"
+      ],
+      "description": "Stable codes. FRESHNESS_UNAVAILABLE is the retryable dependency failure ADR-004 requires when required state or visibility cannot be reconstructed completely."
+    },
+    "StatusMatrix": {
+      "description": "Not a validation schema — the normative code-to-status mapping from API.md, kept beside the codes so the two cannot drift. 400 MALFORMED_REQUEST; 401 UNAUTHENTICATED; 403 FORBIDDEN; 404 NOT_FOUND; 409 STALE_REVISION, IDEMPOTENCY_CONFLICT, STATE_CONFLICT; 413 PAYLOAD_TOO_LARGE; 422 SCHEMA_REJECTED, DOMAIN_REJECTED; 428 PRECONDITION_REQUIRED; 429 QUOTA_EXCEEDED; 503 DEPENDENCY_UNAVAILABLE, FRESHNESS_UNAVAILABLE. A model refusal is NOT an HTTP error: it is a typed failed turn outcome with code provider_refused.",
+      "type": "object"
+    }
+  }
+}
