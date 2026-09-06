@@ -58,6 +58,8 @@ Nothing here asserts that the described behavior is implemented. RCE-061 bootstr
 
 **INV-022** A public or catalog preview excludes secrets, private facts, internal anatomy detail, secret history and any other user's runtime state.
 
+**INV-041** Retrieval, context compilation and summarization are scoped to the observing character instance. Two instances sharing an owner, continuity and branch share nothing by that fact alone: a memory, belief or observation enters an instance's reachable set only through an Observation that instance could perceive. Being present in the same scene is not perception, and a summary may not widen the set (INV-039).
+
 ## Atomic state change
 
 **INV-023** Every accepted turn binds transcript and domain state atomically. Accepted domain events, validated assistant utterances, every required effect in ADR-004's required effect set, current projection and required-state completion revision updates, the turn outcome and outbox intent commit together or not at all. If any required effect fails, none of that turn's canonical output or effects commits. A routine-only turn may legitimately carry zero retained-memory effects.
@@ -76,7 +78,7 @@ Nothing here asserts that the described behavior is implemented. RCE-061 bootstr
 
 ## Access and eligibility gates
 
-**INV-030** Five checks are evaluated separately and each independently denies: account access, fictional adulthood, player content authorization, character current willingness, and provider capability.
+**INV-030** Five checks are evaluated separately and each independently denies: account access, fictional adulthood, player content authorization, character current willingness, and provider capability. ADR-006 naming is canonical. **Account access is itself a conjunction and fails closed:** wherever adult access is evaluated, the request requires an authenticated principal, authorization for the resource, AND a valid current UserEligibility assurance. Assurance that is missing, expired or revoked denies, and a successful authentication never substitutes for it. The two are distinct records — UserAccount and UserEligibility — and neither implies the other.
 
 **INV-031** No gate may be derived from another, and none may be derived from preference, orientation, relationship status, relationship history, bodily response, repeated past action or silence.
 
@@ -128,7 +130,8 @@ Fixture numbers refer to the mandatory regression fixtures in QUALITY.md. Test s
 | INV-020 no cross-scenario memory | 2 | RCE-021 |
 | INV-021 branch-aware retrieval | 12 | RCE-083 |
 | INV-022 preview redaction | 1 | RCE-083 |
-| INV-023 atomic turn commit | 10 | RCE-083 |
+| INV-041 observer isolation | 7 | RCE-021 |
+| INV-023 atomic turn commit | — | RCE-012, RCE-018 |
 | INV-024 generate outside transaction | — | RCE-083 |
 | INV-025 one commit per revision | 10 | RCE-083 |
 | INV-026 idempotency scope | 10 | RCE-083 |
@@ -151,7 +154,7 @@ Fixture numbers refer to the mandatory regression fixtures in QUALITY.md. Test s
 
 Each counterexample states the failure a naive implementation produces, the invariant that forbids it and the fixture that catches it. These are the four required by RCE-001 and are normative examples, not illustrations.
 
-**Eye-color drift.** A character's eyes are authored green with authority `explicit_author`. A later generated paragraph describes them as blue. The naive system treats the newest description as the current value. Forbidden by INV-001, INV-002, INV-003 and INV-004: narration proposes, and a `derived` claim cannot replace an `explicit_author` fact. Caught by fixture 3. The correct outcome is that the claim is rejected at validation and the eye color remains green; if the narration is accepted for other reasons, the contradicting claim is dropped rather than recorded.
+**Eye-color drift.** A character's eyes are authored green with authority `explicit_author`. A later generated paragraph describes them as blue. The naive system treats the newest description as the current value. Forbidden by INV-001, INV-002, INV-003 and INV-004: narration proposes, and a `derived` claim cannot replace an `explicit_author` fact. Caught by fixture 3. The correct outcome is that the candidate is repaired and revalidated, or rejected. Dropping the extracted claim while committing the prose that asserted it is NOT a correct outcome: it leaves the canonical transcript saying blue while structured state says green, and a later reader — human or model — has no way to know which is canon. Transcript and structured state must agree at every accepted turn.
 
 **The vanishing watch.** A watch is dropped on the floor in an accepted event. Several turns, a reload, a network loss and a process restart pass without the watch being mentioned. The naive system, reconstructing the scene from recent dialogue, omits it and it ceases to exist. Forbidden by INV-037 and INV-036: an object stays at its committed location until an accepted event moves it, and a disconnect is not teardown. Caught by fixture 5. Absence of mention carries no information.
 
@@ -171,4 +174,4 @@ These are recorded blockers, not defaults chosen by an agent. Each needs an owne
 
 4. **Ephemeral environment reset has no boundary.** ADR-007 allows a user-approved ephemeral environment to reset while "ordinary persistent inventory and promoted facts survive", but does not define which objects are ephemeral. INV-037 currently reads teardown as never removing a committed object, which may be stricter than intended. RCE-048 and RCE-087 need this settled.
 
-5. **Two invariants have no fixture.** INV-006 (equal-authority conflict surfaces explicitly) and INV-024 (generation outside a transaction) are not covered by any of QUALITY.md's eighteen fixtures. Either QUALITY.md gains two fixtures or these invariants are unverifiable. Recommend adding them under RCE-020 and RCE-083 respectively.
+5. **Three invariants have no fixture.** INV-006 (equal-authority conflict surfaces explicitly), INV-024 (generation outside a transaction) and INV-023 (atomic turn commit) are not covered by any of QUALITY.md's eighteen fixtures. INV-023 was previously mapped to fixture 10, which is wrong: fixture 10 exercises duplicate sends, duplicate outbox delivery and stale revisions, but never forces a failure BETWEEN the event, utterance, required-effect, projection, outcome and outbox writes, so no existing fixture would detect a partial commit. QUALITY.md needs a rollback and crash-boundary fixture owned by RCE-012 and RCE-018, plus fixtures for INV-006 under RCE-020 and INV-024 under RCE-083. Until then these three are unverifiable and must not be reported as covered.
