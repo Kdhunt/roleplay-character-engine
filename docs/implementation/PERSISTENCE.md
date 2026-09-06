@@ -16,7 +16,9 @@ Conventions: singular table names, UUID primary keys, UTC timestamps, integer re
 
 ## Aggregates and ownership
 
-Five aggregate families, each with its own transactional boundary and revision. A write touches exactly one aggregate root plus the event, effect and outbox rows it produces.
+Five aggregate families, each with its own consistency boundary and revision.
+
+An **ordinary write** touches exactly one aggregate root plus the event and outbox rows it produces. The **accepted-turn commit is an explicit, named exception**: it is a multi-aggregate transaction that necessarily spans Scene (revision, projections), Continuity (branch head on a regeneration) and the utterance and turn-outcome records, because ADR-004 requires all of it to land together or not at all. That is not a violation of the aggregate model to be worked around — it is the one place where the transaction boundary is deliberately wider than the aggregate boundary, and splitting it to satisfy the aggregate rule would break INV-023. No other operation may claim this exception.
 
 | Aggregate | Root | Ownership key path | Revision |
 | --- | --- | --- | --- |
@@ -26,7 +28,7 @@ Five aggregate families, each with its own transactional boundary and revision. 
 | Continuity | `continuity` → `branch` | `owner_id` | branch head sequence |
 | Scene | `scene_state` | `owner_id` + `continuity_id` + `branch_id` | scene revision, required-state completion revision |
 
-Ownership is a stored edge, not an inference. Every continuity-scoped row carries `owner_id`, `continuity_id` and `branch_id` denormalized onto the row itself, and every foreign key that crosses into continuity data is a composite key including `owner_id`, so a mismatched parent is a constraint violation rather than a policy check that a query can forget (INV-017, INV-018). Repository policy enforces the same scope a second time; neither layer is permitted to be the only one.
+Ownership is a stored edge, not an inference. Every continuity-scoped row carries `owner_id`, `continuity_id` and `branch_id` denormalized onto the row itself, and every foreign key that crosses into continuity data is a composite key carrying **the full scope the reference must preserve** — `owner_id` and `continuity_id` always, plus `branch_id` wherever the relationship is branch-bound. An owner-only composite is not sufficient: it still admits a same-owner, cross-continuity edge, which is exactly the leak the denormalized scope exists to prevent (INV-017, INV-018, INV-020, INV-021). A mismatched parent is then a constraint violation rather than a policy check a query can forget. Repository policy enforces the same scope a second time; neither layer is permitted to be the only one.
 
 A release is immutable once published. A core edit writes a new release row and never updates an existing one (INV-009). An instance stores its `source_release_id` plus explicit overrides and a `resolved_definition_hash`; resolving an instance never writes to the release or the core (INV-012).
 
@@ -66,7 +68,7 @@ Branches: a revision or regeneration appends to a child branch and switches the 
 
 Append-only history must still permit erasure (INV-040). Every event is stored as two rows with different lifetimes:
 
-- **Integrity metadata** — event id, sequence, type, aggregate reference, owner, continuity, branch, timestamp, causation and correlation ids, payload hash. Retained for as long as the log is retained. Contains no personal content.
+- **Integrity metadata** — event id, sequence, type, aggregate reference, owner, continuity, branch, timestamp, causation and correlation ids. Retained for as long as the log is retained. Contains no personal content and **no content-derived digest**: a plain hash of an erased payload is still a verifier for it, because short or enumerable values (a name, an age, a yes/no answer) can be recovered by hashing candidates offline. Where a tamper-evidence digest is genuinely required, use a keyed commitment whose key is destroyed with the payload, so the surviving digest proves nothing about the erased content.
 - **Content payload** — the event body, and any personal text, media reference or structured personal data. Independently erasable, replaced on erasure by a tombstone recording that erasure occurred and when.
 
 Replay over an erased event reconstructs structure, not content: reducers must tolerate a tombstoned payload and produce a state marked incomplete rather than failing or inventing a value. This is the price of erasability and is deliberate.
@@ -136,4 +138,12 @@ Recorded for owner decision; not defaulted by an agent. Numbering is stable and 
 
 3. **Snapshot cadence is unset.** Replay cost grows with branch length. A snapshot every N events bounds it, but N is an engineering decision needing a measured baseline, which does not exist until RCE-083. Recommend an explicit configured value with a conservative default rather than an implicit one, so the number is visible and revisable. ADR-004 already requires RCE-025/028/037 to benchmark a compact context budget on shared continuity fixtures; snapshot cadence should be measured in the same exercise.
 
-4. **Three requirements have no fixture.** Replay determinism under pinned rule versions, a failed required effect rejecting the whole turn, and a routine-only turn committing zero memory effects are all normative here but uncovered by QUALITY.md's eighteen fixtures. The third matters most: without it, an over-eager extractor that writes a memory for every action passes every existing test. Recommend adding all three under RCE-012, RCE-018 and RCE-028.
+4. **Three requirements have no fixture, and each needs an owner before anything downstream may claim it is proven.** None of QUALITY.md's eighteen fixtures covers them, and the verification table above marks them with an em dash rather than borrowing a fixture that does not test them.
+
+   | Requirement | Proposed fixture owner | Why no existing fixture covers it |
+   | --- | --- | --- |
+   | Replay determinism under pinned rule versions | RCE-012 | Fixture 10 tests duplicate delivery and stale revisions, not replay equivalence under a pinned rule set |
+   | A failed required effect rejects the whole turn | RCE-018 | No fixture forces a failure between the event, utterance, effect, projection, outcome and outbox writes; this is the same gap as INV-023 |
+   | A routine-only turn commits zero memory effects | RCE-028 | Nothing asserts an upper bound on effects, so an over-eager extractor writing a memory per action passes every existing test |
+
+   The third is the load-bearing one: it is the only check that would catch the behavior ADR-004 exists to prevent.
