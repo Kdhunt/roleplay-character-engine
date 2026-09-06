@@ -24,3 +24,5 @@ jobs:
         run: node scripts/check-story-plan.mjs
       - name: Test the planning validator
         run: node --test scripts/check-story-plan.test.mjs
+      - name: Test the story dispatcher
+        run: node --test scripts/dispatch-stories.test.mjs
