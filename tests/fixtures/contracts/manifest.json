@@ -114,10 +114,40 @@
       "why": "A succeeded operation cannot also carry an error."
     },
     {
-      "file": "invalid/gates/report.five-evaluations.json",
+      "file": "valid/gates/report.assurance-expired.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "valid",
+      "why": "Expired real-user assurance denies through account_access, which is a conjunction (INV-030)."
+    },
+    {
+      "file": "invalid/gates/report.missing-gate.json",
       "schema": "gates#/$defs/GateReport",
       "expect": "invalid",
       "why": "Every gate reports; an omitted gate cannot pass as satisfied."
+    },
+    {
+      "file": "invalid/gates/report.duplicate-gate.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "invalid",
+      "why": "A duplicated gate cannot stand in for a missing one; identity is constrained, not just count."
+    },
+    {
+      "file": "invalid/gates/report.permitted-with-denial.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "invalid",
+      "why": "permitted is derived: true cannot coexist with a denial."
+    },
+    {
+      "file": "invalid/gates/report.not-permitted-all-satisfied.json",
+      "schema": "gates#/$defs/GateReport",
+      "expect": "invalid",
+      "why": "permitted false requires at least one gate that is not satisfied."
+    },
+    {
+      "file": "invalid/api/page.more-without-cursor.json",
+      "schema": "api-envelope#/$defs/ListResponse",
+      "expect": "invalid",
+      "why": "has_more true without a cursor makes the rest of the collection unreachable."
     },
     {
       "file": "invalid/gates/report.denied-without-reason.json",

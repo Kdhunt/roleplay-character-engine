@@ -6,11 +6,6 @@
       "evaluated_at": "2026-09-05T00:00:00Z"
     },
     {
-      "gate": "real_user_assurance",
-      "outcome": "satisfied",
-      "evaluated_at": "2026-09-05T00:00:00Z"
-    },
-    {
       "gate": "fictional_adult_eligibility",
       "outcome": "satisfied",
       "evaluated_at": "2026-09-05T00:00:00Z"

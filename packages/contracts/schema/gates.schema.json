@@ -2,18 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:rce:schema:gates",
   "title": "Access and eligibility gates",
-  "description": "Canonical wire identifiers for the separately-evaluated access checks (INV-030, INV-031). RCE-053. PROPOSAL PENDING OWNER CONFIRMATION: this enum carries SIX identifiers, not five. ADR-006 lists 'Account access' first; README.md and QUALITY.md both list 'real-user eligibility' in that slot. DOMAIN.md backs them with two different records — UserAccount (identity binding, status, settings) and UserEligibility (assurance status, method, result, expiry, policy version) — so folding them into one identifier would change meaning rather than spelling. See docs/implementation/CONTRACTS.md for the mapping and evidence. If the owner confirms five, delete real_user_assurance and remap its row; that is a one-value change.",
+  "description": "Canonical wire identifiers for the separately-evaluated access checks (INV-030, INV-031). RCE-053. ADR-006 naming is canonical and there are five checks. Real-user age assurance is NOT a sixth identifier: it is part of account_access, which INV-030 defines as a conjunction that fails closed — an authenticated and authorized principal AND a valid current UserEligibility assurance are both required wherever adult access is evaluated. Assurance that is missing, expired or revoked denies through account_access with an assurance_* reason.",
   "$defs": {
     "GateId": {
       "enum": [
         "account_access",
-        "real_user_assurance",
         "fictional_adult_eligibility",
         "player_content_authorization",
         "character_current_willingness",
         "provider_capability"
       ],
-      "description": "account_access: the principal is authenticated and authorized for this resource. real_user_assurance: the real person behind the account has satisfied the age-assurance policy. fictional_adult_eligibility: the character's age is known and adult. player_content_authorization: the player's own content opt-in, outside fiction. character_current_willingness: the character's scoped, revocable in-fiction willingness. provider_capability: what the model adapter actually permits."
+      "description": "account_access: the principal is authenticated, authorized for this resource, AND carries a valid current UserEligibility assurance where adult access is evaluated — all three, failing closed (INV-030). fictional_adult_eligibility: the character's age is known and adult. player_content_authorization: the player's own content opt-in, outside fiction. character_current_willingness: the character's scoped, revocable in-fiction willingness. provider_capability: what the model adapter actually permits."
     },
     "GateOutcome": {
       "enum": [
@@ -95,26 +94,162 @@
     },
     "GateReport": {
       "type": "object",
-      "description": "Every gate is reported, always, so a caller can never mistake an unevaluated gate for a satisfied one. A report is authoritative only for the moment it was evaluated; willingness in particular is rechecked at execution and at commit (INV-033).",
+      "description": "Every gate is reported exactly once, so a caller can never mistake an unevaluated or duplicated gate for a satisfied one. Constrained by identity rather than by array length: a report with account_access twice and willingness missing is rejected. A report is authoritative only for the moment it was evaluated; willingness in particular is rechecked at execution and at commit (INV-033).",
       "properties": {
         "evaluations": {
           "type": "array",
           "items": {
             "$ref": "urn:rce:schema:gates#/$defs/GateEvaluation"
           },
-          "minItems": 6,
-          "maxItems": 6
+          "minItems": 5,
+          "maxItems": 5,
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "account_access"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "fictional_adult_eligibility"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "player_content_authorization"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "character_current_willingness"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "provider_capability"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            }
+          ]
         },
         "permitted": {
           "type": "boolean",
-          "description": "True only when every evaluation is 'satisfied'. A convenience for callers; never a substitute for the individual outcomes."
+          "description": "Derived, not asserted: true requires every outcome to be satisfied, false requires at least one that is not. Never a substitute for reading the individual outcomes."
         }
       },
       "required": [
         "evaluations",
         "permitted"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "permitted": {
+                "const": true
+              }
+            },
+            "required": [
+              "permitted"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "evaluations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "const": "satisfied"
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "permitted": {
+                "const": false
+              }
+            },
+            "required": [
+              "permitted"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "evaluations": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "enum": [
+                        "denied",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

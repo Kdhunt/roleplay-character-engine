@@ -17,15 +17,15 @@
     },
     {
       "gate": "character_current_willingness",
-      "outcome": "denied",
-      "evaluated_at": "2026-09-05T00:00:00Z",
-      "reason": "willingness_withdrawn"
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
     },
     {
       "gate": "provider_capability",
-      "outcome": "satisfied",
-      "evaluated_at": "2026-09-05T00:00:00Z"
+      "outcome": "denied",
+      "evaluated_at": "2026-09-05T00:00:00Z",
+      "reason": "provider_disallows"
     }
   ],
-  "permitted": false
+  "permitted": true
 }

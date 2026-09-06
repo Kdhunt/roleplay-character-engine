@@ -2,8 +2,9 @@
   "evaluations": [
     {
       "gate": "account_access",
-      "outcome": "satisfied",
-      "evaluated_at": "2026-09-05T00:00:00Z"
+      "outcome": "denied",
+      "evaluated_at": "2026-09-05T00:00:00Z",
+      "reason": "assurance_expired"
     },
     {
       "gate": "fictional_adult_eligibility",
@@ -17,9 +18,8 @@
     },
     {
       "gate": "character_current_willingness",
-      "outcome": "denied",
-      "evaluated_at": "2026-09-05T00:00:00Z",
-      "reason": "willingness_withdrawn"
+      "outcome": "satisfied",
+      "evaluated_at": "2026-09-05T00:00:00Z"
     },
     {
       "gate": "provider_capability",

@@ -16,16 +16,10 @@
       "evaluated_at": "2026-09-05T00:00:00Z"
     },
     {
-      "gate": "character_current_willingness",
-      "outcome": "denied",
-      "evaluated_at": "2026-09-05T00:00:00Z",
-      "reason": "willingness_withdrawn"
-    },
-    {
       "gate": "provider_capability",
       "outcome": "satisfied",
       "evaluated_at": "2026-09-05T00:00:00Z"
     }
   ],
-  "permitted": false
+  "permitted": true
 }

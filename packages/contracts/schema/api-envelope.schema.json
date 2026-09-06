@@ -40,6 +40,7 @@
       "allOf": [
         {
           "if": {
+            "type": "object",
             "properties": {
               "has_more": {
                 "const": false
@@ -50,12 +51,36 @@
             ]
           },
           "then": {
+            "type": "object",
             "properties": {
               "next_cursor": false
             }
           }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "has_more": {
+                "const": true
+              }
+            },
+            "required": [
+              "has_more"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "next_cursor"
+            ],
+            "properties": {
+              "next_cursor": true
+            }
+          }
         }
-      ]
+      ],
+      "description": "A cursor and the flag cannot contradict each other in either direction: has_more false forbids next_cursor, and has_more true requires it. Without the second rule a client is told more data exists but given no way to ask for it."
     },
     "ResourceResponse": {
       "type": "object",

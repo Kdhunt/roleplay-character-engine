@@ -16,25 +16,19 @@ The RCE-053 card carries a checklist requiring a mapping from each legacy gate n
 
 | Wire field | ADR-006 (canonical) | README.md:17 | QUALITY.md:23 | CLIENT.md |
 | --- | --- | --- | --- | --- |
-| `account_access` | Account access | *(absent)* | *(absent)* | *(absent)* |
-| `real_user_assurance` | *(absent)* | real-user eligibility | Real-user eligibility | real-user eligibility (:9) |
+| `account_access` | Account access | real-user eligibility | Real-user eligibility | real-user eligibility (:9) |
 | `fictional_adult_eligibility` | fictional adult eligibility | fictional adulthood | fictional age | — |
 | `player_content_authorization` | player content authorization | content opt-in | player opt-in | content opt-in (:9) |
 | `character_current_willingness` | character current willingness | current willingness | character willingness | current willingness (:17) |
 | `provider_capability` | provider capability | provider permission | provider approval | — |
 
-**The mapping is six rows, not five, and that is a finding rather than a preference.**
+Five checks, ADR-006 naming canonical, per the owner decision on RCE-001.
 
-The card's checklist says "Preserve the five checks' meaning and enforcement; this is naming cleanup, not a policy redesign." Following that instruction is what surfaced the problem: rows 1 and 2 are not two spellings of one check.
+The first row needed that decision. ADR-006 names *Account access* where README.md and QUALITY.md name *real-user eligibility*, and DOMAIN.md backs them with two separate records — `UserAccount` and `UserEligibility` — so mapping one onto the other looked like it would drop a check rather than rename one. The resolution keeps five identifiers and puts the missing semantics inside the first: **INV-030 now defines account access as a conjunction that fails closed.** Wherever adult access is evaluated, an authenticated and authorized principal AND a valid current UserEligibility assurance are both required. Assurance that is missing, expired or revoked denies through `account_access` with an `assurance_missing`, `assurance_expired` or `assurance_revoked` reason.
 
-- ADR-006 names **Account access** and has no entry for real-user age assurance.
-- README.md and QUALITY.md both name **real-user eligibility** and have no entry for account access.
-- DOMAIN.md backs them with two separate records: `UserAccount` (issuer+subject identity binding, display profile, status, settings) and `UserEligibility` (assurance status, method, result reference, issued/expiry/revoked times, policy version).
-- RCE-089 states that the character-age gate and real-user assurance remain separate, treating assurance as a first-class concern with its own decision.
+So no enforcement is lost and no competing vocabulary is introduced. `gates.schema.json` carries exactly five identifiers, and `report.assurance-expired.json` fixes the behavior in a fixture: expired assurance denies even though authentication succeeded.
 
-Mapping `real-user eligibility → account_access` would collapse "is this session authorized for this resource" into "has this human satisfied the age-assurance policy". That changes enforcement, which the checklist explicitly forbids. So `gates.schema.json` carries six identifiers, marked in the schema itself as a proposal pending owner confirmation.
-
-**If the owner confirms five,** delete `real_user_assurance` from `GateId`, drop `minItems`/`maxItems` on `GateReport.evaluations` from 6 to 5, and remove the two fixtures that assert six. That is a small, contained reversal — which is why the finding is recorded as a proposal rather than argued further here.
+`GateReport` is constrained **by gate identity, not by array length**. Each of the five appears exactly once, so a report cannot substitute a duplicated `account_access` for a missing willingness evaluation. `permitted` is derived rather than asserted: true requires every outcome satisfied, false requires at least one that is not, so no caller can authorize an operation the detailed outcomes reject.
 
 The remaining checklist items — reconciling the README and API documentation, adding drift regression coverage, and linking implementation evidence — belong to tasks 2 and 3. The checklist stays incomplete.
 
@@ -50,7 +44,7 @@ Fourteen stable codes map to the statuses API.md fixes: 400 `MALFORMED_REQUEST`;
 
 ## Envelopes
 
-A resource response carries `data` and `meta`; a list carries `data`, `page` and `meta`. `page.next_cursor` is absent whenever `has_more` is false — the schema rejects a cursor that contradicts the flag, because that combination is how a client ends up looping. `limit` defaults to 20 and caps at 100.
+A resource response carries `data` and `meta`; a list carries `data`, `page` and `meta`. `page.next_cursor` and `has_more` cannot contradict each other in either direction: false forbids the cursor, true requires it. Without the second rule a client is told more data exists and given no way to ask for it. `limit` defaults to 20 and caps at 100.
 
 `AsyncOperation` covers write endpoints whose work outlives the response. A `succeeded` operation must reference a resource and must not carry an error; a `failed` one must carry an error and must not reference a resource. Neither combination is representable.
 
@@ -70,13 +64,13 @@ Five types on `GET /v1/conversations/{id}/events`: `turn.status`, `turn.committe
 
 ## Verification
 
-Validated with ajv 8 in strict mode during authoring: 13 schemas compile, 48 fixtures across both manifests produce their expected outcomes (22 from RCE-003, 26 added here).
+Validated with ajv 8 in strict mode: 14 schemas compile, 58 fixtures across both manifests produce their expected outcomes (27 from RCE-003, 31 here).
 
 As with RCE-003, that run used a scratch directory. **This repository still has no dependencies, lockfile or test runner, so no committed command reproduces it.** Task 3 wires it into `spec:check` once RCE-061 exists. Treat this as authoring evidence, not a passing repository test.
 
 ## Unresolved
 
-1. **Five gates or six.** The blocking decision for this story. Evidence above; the schema carries six as a proposal. Dependent controllers must not adopt the field names until this is settled, which is precisely what the card's checklist warns about.
+1. **Five gates — RESOLVED by the owner on RCE-001.** ADR-006 naming is canonical and there are five identifiers; real-user assurance lives inside `account_access`, which INV-030 defines as a fail-closed conjunction. Dependent controllers may adopt these field names.
 2. **No OpenAPI document yet.** Task 2. Until it exists, "one explicit API" is a goal rather than a fact, and the shapes here are not bound to any route.
 3. **Idempotency-key retention is stated but not modelled.** API.md sets 24 hours, and `client_message_id` covers duplication beyond that window. Neither appears in a schema, because both are storage and middleware concerns — RCE-073 and RCE-002 own them. Recorded so the gap is visible rather than assumed handled.
 4. **`FRESHNESS_UNAVAILABLE` is an addition, not a transcription.** ADR-004 requires the outcome; API.md's status list predates it and has no code for it. Mapped to 503 as the closest existing semantic. Confirm the status choice.
