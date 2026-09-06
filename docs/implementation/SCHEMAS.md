@@ -12,7 +12,8 @@ DOMAIN.md owns entity meaning and lifetimes; this document and the schema files 
 | --- | --- |
 | `common` | Shared definitions: identifiers, timestamps, revisions, enums, scopes, provenance, pinned versions, extensions |
 | `fact-envelope` | The wrapper that makes a value auditable — authority, provenance, lock state, lifetime, epistemic status |
-| `character-core` | Creator-owned mutable draft plus pointers to its releases |
+| `character-core` | Creator-owned entity: the editable draft plus pointers to its releases |
+| `character-draft` | The editable working state a core holds — every field optional, age may be unknown |
 | `character-release` | Immutable published snapshot |
 | `character-instance` | A character inside one scenario continuity: a pinned release plus overrides |
 | `persona` | The user's fictional identity — never their real identity record |
@@ -35,11 +36,11 @@ A `known` envelope must carry a `value`; an `unknown` one must not; a `contested
 
 Several invariants are enforced by shape rather than by a rule someone has to remember:
 
-- **Adulthood.** A release and a persona require `age.knowledge_status = "known"` and `value >= 18`. Unknown, contested and underage ages all fail validation, so an underage or ambiguous character is not representable as a published release (INV-032). A *draft core* may hold an unknown age — it simply cannot be published.
-- **Override scope.** `character-instance.overrides` is keyed by dotted path, so the same field cannot be overridden twice — conflicting overrides are unrepresentable rather than merely discouraged. `propertyNames` restricts which paths may be overridden at all; `age`, `id`, `core_id` and `owner_id` are not among them, so a scenario override can neither move the adult gate nor reassign ownership (INV-012, INV-018).
+- **Adulthood.** A release and a persona require `age.knowledge_status = "known"` and `value >= 18`. Unknown, contested and underage ages all fail validation, so an underage or ambiguous character is not representable as a published release (INV-032). A *draft* may hold an unknown age and half-authored fields — publishing is what validates it against `character-release`, which is where the rule bites.
+- **Override scope.** `character-instance.overrides` is keyed by dotted path, so the same field cannot be overridden twice — conflicting overrides are unrepresentable rather than merely discouraged. `propertyNames` enumerates the **real** overridable fields of a release, plus dynamic `appearance.attributes.<name>` entries, so a path that does not exist on a release (`identity.not_a_field`) is rejected rather than validating into something no resolver could deterministically apply. `age`, `id`, `core_id` and `owner_id` are absent from that set, so a scenario override can neither move the adult gate nor reassign ownership (INV-012, INV-018).
 - **Preview redaction.** `character-preview` enumerates its permitted fields with `additionalProperties: false`. A preview built by copying a release fails validation instead of leaking secrets, private goals or internal anatomy detail (INV-022).
 - **Independence.** `identity`, `anatomy`, `orientation`, `terminology` and `relationship_config` are sibling objects with no cross-references, so none can be derived from another (INV-014).
-- **Reproducible resolution.** A release pins its schema, archetype and preset versions; `resolved-character` records the inputs and a `resolution_hash` (INV-013).
+- **Reproducible resolution.** A release must pin the anatomy preset it resolved against, and the preset reference lives in `pins` and nowhere else — a release cannot disagree with its own pin because there is only one place to state it. `resolved-character` records the inputs and a `resolution_hash`, and a `contested` resolved field carries no `value`, so a consumer cannot mistake one conflicting candidate for the winner (INV-006, INV-013).
 
 ## Extensions and unknown data
 
@@ -51,13 +52,15 @@ Every entity carries `schema_version`. A release additionally pins the archetype
 
 ## Fixtures
 
-`tests/fixtures/character/manifest.json` lists every case with the schema it must be checked against, its expected outcome and why it exists. Twenty-two cases: ten valid, twelve invalid, covering the six the card requires — minimal valid character, invalid age, invalid reference, conflicting overrides, inert extensions, and private-preview redaction.
+`tests/fixtures/character/manifest.json` lists every case with the schema it must be checked against, its expected outcome and why it exists. Eleven valid and sixteen invalid, covering the six the card requires — minimal valid character, invalid age, invalid reference, conflicting overrides, inert extensions, and private-preview redaction.
+
+Twenty-seven cases after review: the five added cover a half-authored draft, a core with no draft, a release missing its anatomy pin, an override on a nonexistent path, and a contested resolved field carrying a value.
 
 The manifest is the interface for automated validation. A checker reads it, resolves each `schema` name against `schema_dir`, and asserts the outcome matches `expect`.
 
 ## Verification status
 
-These schemas and fixtures were validated with ajv 8 in strict mode during authoring: all 8 schemas compile and all 22 fixtures produce their expected outcome. That was run from a scratch directory, because **this repository has no dependencies, no lockfile and no test runner until RCE-061**. There is no committed command that reproduces it yet.
+These schemas and fixtures were validated with ajv 8 in strict mode: all 9 schemas compile and all 27 fixtures produce their expected outcome. That was run from a scratch directory, because **this repository has no dependencies, no lockfile and no test runner until RCE-061**. There is no committed command that reproduces it yet.
 
 RCE-053 should wire this manifest into `spec:check` once the workspace exists. Until then, treat the result above as authoring evidence, not as a passing repository test.
 

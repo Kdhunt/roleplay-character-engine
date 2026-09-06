@@ -34,9 +34,44 @@
     },
     "overrides": {
       "type": "object",
-      "description": "Keyed by dotted path so a path can appear at most once — two conflicting overrides of the same field are unrepresentable rather than merely discouraged. propertyNames restricts which paths may be overridden at all: identity, appearance, orientation, terminology, relationship_config, values, traits, voice, preferences, goals and agency. Notably absent are age, id, core_id and owner_id — a scenario override can never move the adult gate or reassign ownership (INV-018, INV-032).",
+      "description": "Keyed by path so a path can appear at most once — two conflicting overrides of the same field are unrepresentable rather than merely discouraged. propertyNames enumerates the REAL overridable fields of a release plus dynamic appearance attributes, so a path that does not exist on a release (identity.not_a_field) is rejected rather than validating into something that cannot be deterministically applied. Notably absent are age, id, core_id and owner_id — a scenario override can never move the adult gate or reassign ownership (INV-018, INV-032).",
       "propertyNames": {
-        "pattern": "^(identity|appearance|orientation|terminology|relationship_config|values|traits|voice|preferences|goals|agency)(\\.[a-z0-9_]{1,40}){0,4}$"
+        "anyOf": [
+          {
+            "enum": [
+              "identity.display_name",
+              "identity.pronouns",
+              "identity.gender",
+              "identity.species",
+              "identity.background",
+              "appearance.summary",
+              "orientation.attraction",
+              "orientation.notes",
+              "terminology.preferred_terms",
+              "relationship_config.model",
+              "relationship_config.notes",
+              "values",
+              "traits",
+              "goals",
+              "voice.formality",
+              "voice.rhythm",
+              "voice.humor",
+              "voice.allowed_phrases",
+              "voice.avoided_phrases",
+              "voice.positive_examples",
+              "voice.negative_examples",
+              "preferences.authored",
+              "preferences.boundaries",
+              "agency.player_may_control",
+              "agency.player_may_narrate_actions",
+              "agency.notes"
+            ]
+          },
+          {
+            "type": "string",
+            "pattern": "^appearance\\.attributes\\.[a-z][a-z0-9_]{1,40}$"
+          }
+        ]
       },
       "additionalProperties": {
         "type": "object",

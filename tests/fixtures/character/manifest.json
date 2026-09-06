@@ -66,6 +66,36 @@
       "why": "Resolved view records which layer supplied each field."
     },
     {
+      "file": "valid/core.partially-authored.json",
+      "schema": "character-core",
+      "expect": "valid",
+      "why": "A half-authored draft is savable before any release exists."
+    },
+    {
+      "file": "invalid/core.no-draft.json",
+      "schema": "character-core",
+      "expect": "invalid",
+      "why": "A core without a draft has nowhere to author (GET/PATCH /v1/characters/{id})."
+    },
+    {
+      "file": "invalid/release.missing-anatomy-pin.json",
+      "schema": "character-release",
+      "expect": "invalid",
+      "why": "A release must pin the anatomy preset it resolved against (INV-013)."
+    },
+    {
+      "file": "invalid/instance.override-unknown-path.json",
+      "schema": "character-instance",
+      "expect": "invalid",
+      "why": "An override path that is not a real release field is rejected."
+    },
+    {
+      "file": "invalid/resolved.contested-with-value.json",
+      "schema": "resolved-character",
+      "expect": "invalid",
+      "why": "A contested field cannot present one candidate as the resolved value."
+    },
+    {
       "file": "invalid/release.age-unknown.json",
       "schema": "character-release",
       "expect": "invalid",

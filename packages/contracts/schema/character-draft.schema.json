@@ -1,84 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:rce:schema:character-release",
-  "title": "CharacterRelease",
-  "description": "Immutable published snapshot of a CharacterCore. RCE-003. A core edit produces a new release and never mutates an existing one (INV-009). Runtime conditions and memories are referenced, never embedded: a release does not grow as a scenario is played.",
+  "$id": "urn:rce:schema:character-draft",
+  "title": "CharacterDraft",
+  "description": "The editable working state inside a CharacterCore, and the target of GET/PATCH /v1/characters/{id}. RCE-003. Carries the same authored fields as a release, but every one is optional and age may be unknown or contested: a draft is what exists BEFORE the release constraints can be satisfied. Publishing validates the draft against character-release, which is where the adult-age rule bites (INV-032).",
   "type": "object",
   "properties": {
-    "id": {
-      "$ref": "urn:rce:schema:common#/$defs/Uuid"
-    },
-    "core_id": {
-      "$ref": "urn:rce:schema:common#/$defs/Uuid"
-    },
-    "owner_id": {
-      "$ref": "urn:rce:schema:common#/$defs/Uuid"
-    },
-    "schema_version": {
-      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
-    },
-    "revision": {
-      "$ref": "urn:rce:schema:common#/$defs/Revision"
-    },
-    "created_at": {
-      "$ref": "urn:rce:schema:common#/$defs/Utc"
-    },
-    "updated_at": {
-      "$ref": "urn:rce:schema:common#/$defs/Utc"
-    },
-    "title": {
-      "$ref": "urn:rce:schema:common#/$defs/ShortText"
-    },
-    "visibility": {
-      "enum": [
-        "private",
-        "catalog_pending",
-        "catalog_approved"
-      ],
-      "description": "Catalog approval and private ownership are separate concerns."
-    },
-    "pins": {
-      "allOf": [
-        {
-          "$ref": "urn:rce:schema:common#/$defs/PinnedVersions"
-        },
-        {
-          "type": "object",
-          "required": [
-            "anatomy_preset_release_id"
-          ],
-          "properties": {
-            "anatomy_preset_release_id": true
-          }
-        }
-      ],
-      "description": "A release must pin the anatomy preset it resolved against; without it, resolution is not reproducible (INV-013)."
-    },
-    "age": {
-      "description": "A publishable release requires an unambiguously adult, known age (INV-032). A draft core may carry unknown age; a release may not. Adulthood is never inferred from appearance, anatomy, species or archetype name.",
-      "allOf": [
-        {
-          "$ref": "urn:rce:schema:fact-envelope"
-        },
-        {
-          "properties": {
-            "knowledge_status": {
-              "const": "known"
-            },
-            "value": {
-              "type": "integer",
-              "minimum": 18,
-              "maximum": 4000
-            }
-          },
-          "required": [
-            "knowledge_status",
-            "value"
-          ],
-          "type": "object"
-        }
-      ]
-    },
     "identity": {
       "type": "object",
       "description": "Independent of anatomy, orientation, terminology and relationship configuration (INV-014).",
@@ -106,10 +32,6 @@
           "$ref": "urn:rce:schema:common#/$defs/LongText"
         }
       },
-      "required": [
-        "display_name",
-        "pronouns"
-      ],
       "additionalProperties": false
     },
     "appearance": {
@@ -130,9 +52,6 @@
           "maxProperties": 128
         }
       },
-      "required": [
-        "attributes"
-      ],
       "additionalProperties": false
     },
     "anatomy": {
@@ -412,31 +331,12 @@
           "$ref": "urn:rce:schema:common#/$defs/MediumText"
         }
       },
-      "required": [
-        "player_may_control"
-      ],
       "additionalProperties": false
     },
-    "x_ext": {
-      "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    "age": {
+      "$ref": "urn:rce:schema:fact-envelope",
+      "description": "May be known, unknown or contested while drafting. A release may not be published until this is known and adult."
     }
   },
-  "required": [
-    "id",
-    "core_id",
-    "owner_id",
-    "schema_version",
-    "revision",
-    "created_at",
-    "updated_at",
-    "title",
-    "visibility",
-    "pins",
-    "age",
-    "identity",
-    "appearance",
-    "anatomy",
-    "agency"
-  ],
   "additionalProperties": false
 }

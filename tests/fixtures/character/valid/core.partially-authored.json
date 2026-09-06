@@ -2,14 +2,31 @@
   "id": "22222222-2222-4222-8222-222222222222",
   "owner_id": "11111111-1111-4111-8111-111111111111",
   "schema_version": "1.0.0",
-  "revision": 2,
+  "revision": 3,
   "created_at": "2026-09-05T00:00:00Z",
   "updated_at": "2026-09-05T00:00:00Z",
-  "title": "Unfinished draft",
+  "title": "Half written",
   "visibility": "private",
   "archived": false,
   "release_ids": [],
   "draft": {
+    "identity": {
+      "display_name": "Ada"
+    },
+    "appearance": {
+      "attributes": {
+        "eye_color": {
+          "knowledge_status": "known",
+          "value": "green",
+          "authority": "explicit_author",
+          "lifetime": "release",
+          "provenance": {
+            "source_type": "author",
+            "effective_revision": 1
+          }
+        }
+      }
+    },
     "age": {
       "knowledge_status": "unknown",
       "authority": "default",
@@ -18,9 +35,6 @@
         "source_type": "system",
         "effective_revision": 1
       }
-    },
-    "identity": {
-      "display_name": "Working title"
     }
   }
 }

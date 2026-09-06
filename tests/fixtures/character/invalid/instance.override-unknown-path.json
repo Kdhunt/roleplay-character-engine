@@ -12,16 +12,8 @@
   "source_release_id": "33333333-3333-4333-8333-333333333333",
   "resolved_definition_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "overrides": {
-    "appearance.attributes.hair_color": {
-      "value": "silver",
-      "authority": "explicit_author",
-      "provenance": {
-        "source_type": "author",
-        "effective_revision": 1
-      }
-    },
-    "identity.display_name": {
-      "value": "Ada (undercover)",
+    "identity.not_a_field": {
+      "value": "x",
       "authority": "explicit_author",
       "provenance": {
         "source_type": "author",

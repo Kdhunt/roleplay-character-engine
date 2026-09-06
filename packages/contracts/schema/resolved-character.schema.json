@@ -118,6 +118,23 @@
                 "value": false
               }
             }
+          },
+          {
+            "if": {
+              "properties": {
+                "knowledge_status": {
+                  "const": "contested"
+                }
+              },
+              "required": [
+                "knowledge_status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "value": false
+              }
+            }
           }
         ]
       },

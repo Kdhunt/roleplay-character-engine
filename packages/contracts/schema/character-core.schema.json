@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:rce:schema:character-core",
   "title": "CharacterCore",
-  "description": "Creator-owned, global, mutable draft. RCE-003. Holds the working draft and pointers to published releases; a core edit never mutates a release or an existing scenario (INV-009). Unlike a release, a draft core may carry an unknown age — it simply cannot be published until the age is known and adult (INV-032).",
+  "description": "Creator-owned, global, mutable draft. RCE-003. Holds the working draft and pointers to published releases; a core edit never mutates a release or an existing scenario (INV-009). Holds the editable draft (character-draft) that GET/PATCH /v1/characters/{id} operates on. Unlike a release, a draft may carry an unknown age and half-authored fields — it simply cannot be published until it satisfies character-release, where the adult-age rule bites (INV-032).",
   "type": "object",
   "properties": {
     "id": {
@@ -36,10 +36,6 @@
     "archived": {
       "type": "boolean"
     },
-    "draft_age": {
-      "$ref": "urn:rce:schema:fact-envelope",
-      "description": "May be known, unknown or contested while drafting. Publishing requires known and adult."
-    },
     "current_release_id": {
       "$ref": "urn:rce:schema:common#/$defs/Uuid",
       "description": "Absent until the first release is published. Absence means never published, not 'unknown'."
@@ -54,6 +50,10 @@
     },
     "x_ext": {
       "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    },
+    "draft": {
+      "$ref": "urn:rce:schema:character-draft",
+      "description": "The editable working state. Present from creation; its own fields are all optional."
     }
   },
   "required": [
@@ -66,7 +66,8 @@
     "title",
     "visibility",
     "archived",
-    "release_ids"
+    "release_ids",
+    "draft"
   ],
   "additionalProperties": false
 }
