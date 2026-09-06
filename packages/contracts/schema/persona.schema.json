@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:persona",
+  "title": "Persona",
+  "description": "The user's fictional identity inside a scenario. RCE-003. This is NOT the user's real identity record: no legal name, no contact details, no assurance evidence, no document reference may appear here. Real-user eligibility lives on UserAccount and is a separate check from fictional adulthood (INV-030).",
+  "type": "object",
+  "properties": {
+    "id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "owner_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "schema_version": {
+      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+    },
+    "revision": {
+      "$ref": "urn:rce:schema:common#/$defs/Revision"
+    },
+    "created_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "updated_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "display_name": {
+      "$ref": "urn:rce:schema:common#/$defs/ShortText"
+    },
+    "pronouns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 24
+      },
+      "minItems": 1,
+      "maxItems": 6
+    },
+    "age": {
+      "description": "Explicit fictional adult age. Same rule as a release: known and adult, never inferred (INV-032).",
+      "allOf": [
+        {
+          "$ref": "urn:rce:schema:fact-envelope"
+        },
+        {
+          "properties": {
+            "knowledge_status": {
+              "const": "known"
+            },
+            "value": {
+              "type": "integer",
+              "minimum": 18,
+              "maximum": 4000
+            }
+          },
+          "required": [
+            "knowledge_status",
+            "value"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "summary": {
+          "$ref": "urn:rce:schema:common#/$defs/MediumText"
+        },
+        "attributes": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]{1,40}$"
+          },
+          "additionalProperties": {
+            "$ref": "urn:rce:schema:fact-envelope"
+          },
+          "maxProperties": 64
+        }
+      },
+      "additionalProperties": false
+    },
+    "anatomy": {
+      "type": "object",
+      "properties": {
+        "preset_release_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        }
+      },
+      "additionalProperties": false
+    },
+    "agency": {
+      "type": "object",
+      "properties": {
+        "ai_may_narrate_persona_actions": {
+          "type": "boolean"
+        },
+        "ai_may_infer_persona_thoughts": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ai_may_narrate_persona_actions",
+        "ai_may_infer_persona_thoughts"
+      ],
+      "additionalProperties": false
+    },
+    "x_ext": {
+      "$ref": "urn:rce:schema:common#/$defs/Extensions"
+    }
+  },
+  "required": [
+    "id",
+    "owner_id",
+    "schema_version",
+    "revision",
+    "created_at",
+    "updated_at",
+    "display_name",
+    "pronouns",
+    "age",
+    "agency"
+  ],
+  "additionalProperties": false
+}

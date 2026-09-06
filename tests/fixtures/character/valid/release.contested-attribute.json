@@ -1,0 +1,68 @@
+{
+  "id": "33333333-3333-4333-8333-333333333333",
+  "core_id": "22222222-2222-4222-8222-222222222222",
+  "owner_id": "11111111-1111-4111-8111-111111111111",
+  "schema_version": "1.0.0",
+  "revision": 1,
+  "created_at": "2026-09-05T00:00:00Z",
+  "updated_at": "2026-09-05T00:00:00Z",
+  "title": "Test character",
+  "visibility": "private",
+  "pins": {
+    "schema_version": "1.0.0",
+    "anatomy_preset_release_id": "88888888-8888-4888-8888-888888888888"
+  },
+  "age": {
+    "knowledge_status": "known",
+    "value": 27,
+    "authority": "explicit_author",
+    "lifetime": "release",
+    "provenance": {
+      "source_type": "author",
+      "effective_revision": 1
+    }
+  },
+  "identity": {
+    "display_name": "Ada",
+    "pronouns": [
+      "she",
+      "her"
+    ],
+    "species": "human"
+  },
+  "appearance": {
+    "attributes": {
+      "hair_color": {
+        "knowledge_status": "contested",
+        "authority": "canonical",
+        "lifetime": "release",
+        "provenance": {
+          "source_type": "author",
+          "effective_revision": 1
+        },
+        "candidates": [
+          {
+            "value": "auburn",
+            "authority": "canonical",
+            "provenance": {
+              "source_type": "author",
+              "effective_revision": 1
+            }
+          },
+          {
+            "value": "chestnut",
+            "authority": "canonical",
+            "provenance": {
+              "source_type": "import",
+              "effective_revision": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "anatomy": {},
+  "agency": {
+    "player_may_control": false
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:character-preview",
+  "title": "CharacterPreview",
+  "description": "What the catalog may show about a release to someone who does not own it. RCE-003. Redaction is enforced by construction: the permitted field set is enumerated and additionalProperties is false, so a preview built by copying a release fails validation instead of leaking. Secrets, private facts, internal anatomy detail, secret history and any other user's runtime state have no representable place here (INV-022).",
+  "type": "object",
+  "properties": {
+    "release_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "core_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "schema_version": {
+      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+    },
+    "title": {
+      "$ref": "urn:rce:schema:common#/$defs/ShortText"
+    },
+    "display_name": {
+      "$ref": "urn:rce:schema:common#/$defs/ShortText"
+    },
+    "pronouns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 24
+      },
+      "minItems": 1,
+      "maxItems": 6
+    },
+    "species": {
+      "$ref": "urn:rce:schema:common#/$defs/ShortText"
+    },
+    "age_years": {
+      "type": "integer",
+      "minimum": 18,
+      "maximum": 4000,
+      "description": "A plain integer, not a FactEnvelope: provenance, authority and lock state are internal and are not published."
+    },
+    "public_summary": {
+      "$ref": "urn:rce:schema:common#/$defs/MediumText"
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40
+      }
+    },
+    "portrait_media_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "attribution": {
+      "type": "object",
+      "properties": {
+        "creator_display_name": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        }
+      },
+      "required": [
+        "creator_display_name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "release_id",
+    "core_id",
+    "schema_version",
+    "title",
+    "display_name",
+    "pronouns",
+    "age_years",
+    "public_summary"
+  ],
+  "additionalProperties": false
+}
