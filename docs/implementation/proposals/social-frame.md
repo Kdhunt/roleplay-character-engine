@@ -40,7 +40,9 @@ A `Location` or `EnvironmentTemplate` references a pinned `SocialFrame` release.
 
 ## How it enters the system
 
-**Expectations are written with `authority: "default"`** — the lowest rung of the existing enum. INV-002 then does the work with no new machinery: every `explicit_author`, `canonical`, `imported` and `derived` fact outranks a social expectation automatically. A frame is a prior, never canon (INV-001, INV-004).
+**Expectations are not facts, and that is the mechanism.** An earlier draft of this note claimed `authority: "default"` was sufficient to keep a frame non-canonical. It is not: INV-002 uses authority only to order *replacements*, INV-001 makes structured state canonical regardless of rank, and the schemas already admit structured facts carrying `default` authority. A frame written as a `FactEnvelope` would therefore be canon — merely the weakest canon — which is exactly the outcome to avoid.
+
+So a frame expectation is **never a `FactEnvelope` and never enters scene or character state**. It is a read-only input to two consumers and nothing else, and it has no write path into the fact system at all. No accepted event may cite a frame expectation as the source of a committed fact, and ADR-004's required effect set does not admit one. Non-canonicity comes from having no way in, not from losing a ranking contest.
 
 **Context compilation** (RCE-017, RCE-037) selects salient expectations into the `ContextBundle` under the existing token budget, scoped and ranked like any other optional recall.
 
@@ -50,7 +52,7 @@ A `Location` or `EnvironmentTemplate` references a pinned `SocialFrame` release.
 
 1. **A frame can never satisfy a gate.** This is the whole safety story. Expectation and authorization are different axes, and a product supporting explicit adult content is exactly where conflating them does damage — a bedroom frame must be structurally incapable of contributing to `character_current_willingness`. INV-031 already forbids deriving a gate from preference, orientation, relationship status, history, bodily response, repeated past action or silence. Setting and location were missing from that list. See "What lands now".
 
-2. **Never canon.** `authority: "default"` guarantees it, and a frame may not be the source of a committed fact under ADR-004's required effect set.
+2. **Never canon, enforced structurally rather than by rank.** A frame expectation is not a `FactEnvelope` and has no write path into scene or character state; no accepted event may cite one as the source of a committed fact, and ADR-004's required effect set does not admit one. Authority rank is the wrong instrument here — `default` would still be canon, just the weakest canon.
 
 3. **Awareness is observer-scoped.** A frame is world-level. Whether a given instance *knows* a local convention is that instance's own belief with its own confidence (INV-008), reachable only through perception (INV-041). A character raised elsewhere plausibly does not share the frame, and that is a feature.
 
@@ -108,3 +110,4 @@ Draft text for Trello, not yet created:
 2. **Where does the frame resolve — location, environment template, or both?** RCE-048 and RCE-087 own those models and are unbuilt, so this cannot be settled here.
 3. **Does a frame ever affect physical validation?** Proposed answer: no. Proxemics expectations inform generation, never the geometry engine, or the two will disagree.
 4. **Epic placement.** RCE-043 (runtime world state) is the closest fit, but this is arguably character-integrity work under RCE-042. Owner's call.
+5. **If a frame must never be a fact, what reads it?** Context compilation and validation only, per above — but that means frames need their own retrieval path rather than riding the memory ranking that RCE-036 owns. Whether that is a separate service or a branch inside the context compiler is unsettled, and it affects RCE-017's shape.
