@@ -22,7 +22,7 @@ Each instance has a continuity and owner. Memories, relationships, beliefs, goal
 
 ## ADR-004: canonical state and commits
 
-Decision clarified with the owner on 2026-09-05: preserve what a scene establishes, not a separate memory of every action used to establish it. Required continuity state and optional narrative recall have different retention and commit rules. This section, the compact continuity contract in DOMAIN.md and INV-023 in QUALITY.md define the previously unspecified required deterministic memory effects. They are specifications, not evidence of completed implementation.
+Decision clarified with the owner on 2026-09-05: preserve what a scene establishes, not a separate memory of every action used to establish it. Required continuity state and optional narrative recall have different retention and commit rules. This section, the compact continuity contract in DOMAIN.md and INV-023 in INVARIANTS.md define the previously unspecified required deterministic memory effects. They are specifications, not evidence of completed implementation.
 
 An incoming user message is durable input. Distinguish an authorized scenario declaration from an attempted action, quoted dialogue, a hypothetical, a deliberate in-character falsehood or a private thought. An unambiguous owner declaration establishes scoped scenario truth after core-rule and permission validation; it is not subject to a low significance score veto. Compile the declaration into a typed authorized scenario edit and apply it to the proposed snapshot before generating the response. Do not rewrite the saved persona, global core or other scenarios. Attempted actions still require physical and domain validation. Ambiguous or conflicting intent is unresolved rather than silently converted into authority. Historical contradictions that rewrite accepted events use the existing branch/retcon operation, not in-place history replacement.
 
@@ -82,6 +82,12 @@ Model/refusal behavior is a typed adapter outcome. A refusal cannot alter canon 
 ## ADR-007: state lifetime
 
 Disconnect, browser close and room departure are not scene teardown. Scenes persist for resume. A user-approved ephemeral environment may reset on explicit teardown/expiry; ordinary persistent inventory and promoted facts survive. Reset previews affected entities and cannot clone or silently delete owned objects. Core, scenario, scene, momentary and derived lifetimes are explicit per property.
+
+## ADR-008: normative invariant register
+
+INVARIANTS.md is the single normative rule set for authority, character layer boundaries, axis independence, ownership and continuity isolation, atomic state change, eligibility gating and state lifetime. Each rule carries a stable INV-### identifier so tests, reviews and pull requests cite a rule rather than restating it. Where ARCHITECTURE.md, DOMAIN.md or API.md is ambiguous on one of those subjects, the register decides; where the register is silent, the owning contract decides. Adding, removing or weakening an invariant is a contract change and cannot be done as a side effect of implementing a story.
+
+The register carries an invariant-to-test matrix binding every rule to the mandatory regression fixtures in QUALITY.md and to the test stories that own them, RCE-020, RCE-021, RCE-041 and RCE-083. It does not introduce a parallel test list: a rule with no fixture is recorded as a gap in QUALITY.md rather than left implicit. Four counterexamples — eye-color drift, the vanishing watch, hidden-knowledge leakage and scenario override bleed — are normative and must each stay failing until the corresponding fixture exists. Contradictions found between existing contracts are recorded in the register's Unresolved section as owner decisions; agents do not resolve them by choosing a default. This ADR records a reviewed specification and asserts nothing about implementation.
 
 ## Module layout and commands
 
