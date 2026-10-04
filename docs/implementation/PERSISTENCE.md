@@ -14,7 +14,11 @@ JSONB is permitted only for versioned extensible leaves — an entity's inert na
 
 Conventions: singular table names, UUID primary keys, UTC timestamps, integer revisions, `schema_version` on every persisted entity.
 
-**The event log is partitioned by continuity** (owner decision, 2026-10-04). Event sequence numbers are therefore monotonic within a continuity and carry no global ordering: a consumer needing a total order keys on (`continuity_id`, `sequence`). Replay is bounded by one continuity's history, and erasure fan-out is a scoped delete within a partition rather than an installation-wide scan. Cross-continuity audit is a deliberate fan-out query across partitions, treated as an administrative operation rather than a hot path.
+**The event log is partitioned by continuity** (owner decision, 2026-10-04), with one exception that the scheme must name rather than leave homeless: not every aggregate has a continuity. Account changes, character core and release edits, and the archetype and preset registries all produce events from aggregates with no `continuity_id`. Those live in a second partition family, **owner-scoped**, keyed by `owner_id`. So there are two families — per-continuity streams and an owner-scoped definition stream — and every event belongs to exactly one.
+
+Sequence numbers are monotonic **within a partition** and carry no global ordering. A consumer needing a total order keys on (`continuity_id`, `sequence`) for continuity data or (`owner_id`, `sequence`) for definition data, and never assumes the two interleave. Replay of a continuity is bounded by that continuity's history plus the owner-scoped definition events it references.
+
+Cross-continuity audit is a deliberate fan-out across partitions, treated as an administrative operation under least privilege rather than a hot path.
 
 ## Aggregates and ownership
 
@@ -148,7 +152,11 @@ Recorded for owner decision; not defaulted by an agent. Numbering is stable and 
 
 2. **Event log partitioning — DECIDED 2026-10-04: partition per continuity.** Owner decision. The contract body above now describes the partitioned layout.
 
-   **Consequences, stated so nothing assumes otherwise.** Replay cost is bounded by one continuity's history rather than the whole installation. Erasure fan-out becomes a scoped delete inside one partition instead of a global scan, which is what makes INV-040's "reaches every derivative" tractable at size. Event sequence numbers are monotonic **within a continuity, not globally** — anything that needs a total order must key on (continuity_id, sequence), and no consumer may assume a single global sequence. The SSE event id is unaffected: it was already scoped to conversation and branch.
+   **Consequences, stated so nothing assumes otherwise.** Replay cost is bounded by one continuity's history plus the owner-scoped definition events it references, rather than by the whole installation. Sequence numbers are monotonic **within a partition, not globally** — a total order keys on (continuity_id, sequence) or (owner_id, sequence), and no consumer may assume a single global sequence or that the two families interleave. The SSE event id is unaffected: it was already scoped to conversation and branch.
+
+   **Two partition families, because not every aggregate has a continuity.** Account changes, character core and release edits, and the archetype and preset registries produce events from aggregates with no `continuity_id`. Partitioning the whole log by continuity would leave those with nowhere to go, so they belong to an owner-scoped definition stream. Every event belongs to exactly one family.
+
+   **Partitioning does not shrink account erasure, and this contract does not claim it does.** Erasing one continuity is a scoped delete inside its partition. **Erasing an account is not**: one owner holds many continuity partitions plus their owner-scoped definition stream, and derivatives — exports, media objects, summaries, caches and search indexes — live outside the event log entirely. What makes INV-040's "reaches every derivative" tractable is the derivation registry, not the partitioning: every derivation records the source it came from, so the fan-out is a lookup across every affected store rather than a scan of one partition. Treating account erasure as a single-partition delete would leave data behind.
 
    **Accepted cost.** Cross-continuity audit now requires a deliberate fan-out across partitions. That is an administrative operation under least privilege rather than a hot path, so paying for it there is the right trade.
 
