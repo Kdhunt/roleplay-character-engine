@@ -104,7 +104,7 @@ Nothing here asserts that the described behavior is implemented. RCE-061 bootstr
 
 ## Invariant-to-test matrix
 
-Fixture numbers refer to the mandatory regression fixtures in QUALITY.md. Test stories: RCE-020 anatomy and physical continuity, RCE-021 knowledge, relationship and player agency, RCE-041 memory integrity audit, RCE-083 full product journeys. An invariant with no fixture is a gap in QUALITY.md, not an optional rule — see Unresolved below.
+Fixture numbers refer to the mandatory regression fixtures in QUALITY.md. Test stories: RCE-020 anatomy and physical continuity, RCE-021 knowledge, relationship and player agency, RCE-041 memory integrity audit, RCE-083 full product journeys. Every invariant now maps to a fixture. A rule with no fixture would be a gap in QUALITY.md rather than an optional rule.
 
 | Invariant | QUALITY.md fixture | Owning test story |
 | --- | --- | --- |
@@ -113,7 +113,7 @@ Fixture numbers refer to the mandatory regression fixtures in QUALITY.md. Test s
 | INV-003 explicit edit outranks inference | 3 | RCE-020 |
 | INV-004 no model-generated authority | 3, 13 | RCE-020, RCE-083 |
 | INV-005 unknown stays unknown | 4 | RCE-020 |
-| INV-006 equal-authority conflict is explicit | — | RCE-020 |
+| INV-006 equal-authority conflict is explicit | 20 | RCE-020 |
 | INV-007 locked canon | 3 | RCE-020 |
 | INV-008 authority is not confidence | 7 | RCE-021 |
 | INV-009 layer separation | 2, 3 | RCE-020, RCE-021 |
@@ -131,8 +131,8 @@ Fixture numbers refer to the mandatory regression fixtures in QUALITY.md. Test s
 | INV-021 branch-aware retrieval | 12 | RCE-083 |
 | INV-022 preview redaction | 1 | RCE-083 |
 | INV-041 observer isolation | 7 | RCE-021 |
-| INV-023 atomic turn commit | — | RCE-012, RCE-018 |
-| INV-024 generate outside transaction | — | RCE-083 |
+| INV-023 atomic turn commit | 19 | RCE-012, RCE-018 |
+| INV-024 generate outside transaction | 21 | RCE-018, RCE-083 |
 | INV-025 one commit per revision | 10 | RCE-083 |
 | INV-026 idempotency scope | 10 | RCE-083 |
 | INV-027 cancellation fencing | 11 | RCE-083 |
@@ -174,4 +174,4 @@ These are recorded blockers, not defaults chosen by an agent. Each needs an owne
 
 4. **Ephemeral environment reset has no boundary.** ADR-007 allows a user-approved ephemeral environment to reset while "ordinary persistent inventory and promoted facts survive", but does not define which objects are ephemeral. INV-037 currently reads teardown as never removing a committed object, which may be stricter than intended. RCE-048 and RCE-087 need this settled.
 
-5. **Three invariants have no fixture.** INV-006 (equal-authority conflict surfaces explicitly), INV-024 (generation outside a transaction) and INV-023 (atomic turn commit) are not covered by any of QUALITY.md's eighteen fixtures. INV-023 was previously mapped to fixture 10, which is wrong: fixture 10 exercises duplicate sends, duplicate outbox delivery and stale revisions, but never forces a failure BETWEEN the event, utterance, required-effect, projection, outcome and outbox writes, so no existing fixture would detect a partial commit. QUALITY.md needs a rollback and crash-boundary fixture owned by RCE-012 and RCE-018, plus fixtures for INV-006 under RCE-020 and INV-024 under RCE-083. Until then these three are unverifiable and must not be reported as covered.
+5. **Fixture coverage — RESOLVED 2026-10-04.** INV-006, INV-023 and INV-024 had no fixture, and INV-023 had been mapped to fixture 10, which exercises duplicate sends, duplicate outbox delivery and stale revisions but never forces a failure between the accepted-turn writes. QUALITY.md now carries fixtures 19 to 23: a partial-commit boundary (19), equal-authority conflict (20), no model or external call inside a transaction or replay reducer (21), replay determinism under pinned versions (22), and a routine-only turn committing zero memory effects (23). Owning stories are named in the matrix and in each story's acceptance text.
