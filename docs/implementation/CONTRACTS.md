@@ -73,4 +73,12 @@ As with RCE-003, that run used a scratch directory. **This repository still has 
 1. **Five gates — RESOLVED by the owner on RCE-001.** ADR-006 naming is canonical and there are five identifiers; real-user assurance lives inside `account_access`, which INV-030 defines as a fail-closed conjunction. Dependent controllers may adopt these field names.
 2. **No OpenAPI document yet.** Task 2. Until it exists, "one explicit API" is a goal rather than a fact, and the shapes here are not bound to any route.
 3. **Idempotency-key retention is stated but not modelled.** API.md sets 24 hours, and `client_message_id` covers duplication beyond that window. Neither appears in a schema, because both are storage and middleware concerns — RCE-073 and RCE-002 own them. Recorded so the gap is visible rather than assumed handled.
-4. **`FRESHNESS_UNAVAILABLE` is an addition, not a transcription.** ADR-004 requires the outcome; API.md's status list predates it and has no code for it. Mapped to 503 as the closest existing semantic. Confirm the status choice.
+4. **`FRESHNESS_UNAVAILABLE` status — PROPOSAL, awaiting owner approval.** ADR-004 requires generation to pause with an explicit retryable dependency or freshness failure; API.md's status list predates that decision and has no code for the outcome, so this code is an addition rather than a transcription.
+
+   **Proposed.** 503 with `retryable: true` and a `Retry-After` header. A client distinguishes it from `DEPENDENCY_UNAVAILABLE`, which shares the status, by `code` — which the error model already makes the stable discriminator rather than the status.
+
+   **Rejected: 409.** A conflict tells the caller their state is wrong and that a different request would succeed. Here the request is correct and the server is temporarily behind its own projections, so retrying the identical request is exactly the right move.
+
+   **Rejected: 425 Too Early.** Semantically close, but RFC 8470 ties it to TLS early data. Reusing it for projection lag would mislead every HTTP-aware intermediary between the client and the API.
+
+   **Rejected: 202 with an async operation.** It reports a failure as a success and leaves the client polling with no indication of why, which is the opposite of the explicit typed failure ADR-004 asks for.
