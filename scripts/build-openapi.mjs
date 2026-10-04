@@ -55,10 +55,10 @@ const ENDPOINTS = [
   E('post', '/v1/me/exports', 'createExport', 'account', 'Request a full account export.', 'body idem async'),
   E('get', '/v1/me/exports/{id}', 'getExport', 'account', 'Export status, with a short-lived authorized download when complete.', 'id:id'),
   E('delete', '/v1/me', 'deleteAccount', 'account', 'Erase the account after fresh authentication and confirmation. Revokes sessions immediately.', 'body idem async'),
-  E('get', '/v1/operations/{id}', 'getOperation', 'account', 'Status of an asynchronous operation. Reveals status only and expires.', 'id:id'),
+  E('get', '/v1/operations/{id}', 'getOperation', 'account', 'Status of an asynchronous operation. Reveals status only and expires.', 'id:id receipt'),
 
   // ---- catalog and characters
-  E('get', '/v1/catalog/characters', 'searchCatalog', 'catalog', 'Search approved catalog previews. Redacted view only.', 'page'),
+  E('get', '/v1/catalog/characters', 'searchCatalog', 'catalog', 'Search approved catalog previews. Redacted view only.', 'page search'),
   E('get', '/v1/catalog/characters/{id}', 'getCatalogCharacter', 'catalog', 'Approved catalog preview for one character.', 'id:id res:character-preview'),
   E('get', '/v1/characters', 'listCharacters', 'characters', 'List owned character cores.', 'page'),
   E('post', '/v1/characters', 'createCharacter', 'characters', 'Create an owned character core with an empty draft.', 'body idem'),
@@ -93,8 +93,8 @@ const ENDPOINTS = [
   E('get', '/v1/scenarios/{id}/state', 'getSceneSnapshot', 'state', 'Authorized scene snapshot.', 'id:id'),
   E('get', '/v1/scenarios/{id}/instances/{instanceId}', 'getResolvedInstance', 'state', 'Resolved instance view with per-field provenance.', 'id:id id:instanceId res:resolved-character'),
   E('patch', '/v1/scenarios/{id}/instances/{instanceId}', 'overrideInstance', 'state', 'Explicit scoped definition override under version and authority checks.', 'id:id id:instanceId body precond req:character-instance res:resolved-character'),
-  E('post', '/v1/scenarios/{id}/actions/validate', 'validateActions', 'state', 'Dry-run an ordered action batch against a snapshot revision.', 'id:id body req:[]turn.ActionProposal res:turn.ValidationResult'),
-  E('post', '/v1/scenarios/{id}/actions/commit', 'commitActions', 'state', 'Commit an authorized domain command. Never a generic state patch.', 'id:id body idem precond req:[]turn.ActionProposal'),
+  E('post', '/v1/scenarios/{id}/actions/validate', 'validateActions', 'state', 'Dry-run an ordered action batch against a snapshot revision.', 'id:id body req:turn.ActionBatchRequest res:turn.ActionValidationResponse'),
+  E('post', '/v1/scenarios/{id}/actions/commit', 'commitActions', 'state', 'Commit an authorized domain command. Never a generic state patch.', 'id:id body idem precond req:turn.ActionCommitRequest'),
   E('get', '/v1/worlds', 'listWorlds', 'world', 'List authorized worlds.', 'page'),
   E('post', '/v1/worlds', 'createWorld', 'world', 'Create an authored world.', 'body idem'),
   E('get', '/v1/worlds/{id}', 'getWorld', 'world', 'One authorized world.', 'id:id'),
@@ -129,7 +129,7 @@ const ENDPOINTS = [
   E('patch', '/v1/conversations/{id}', 'updateConversation', 'conversations', 'Update an owned conversation.', 'id:id body precond'),
   E('delete', '/v1/conversations/{id}', 'deleteConversation', 'conversations', 'Delete an owned conversation.', 'id:id precond'),
   E('get', '/v1/conversations/{id}/messages', 'listMessages', 'conversations', 'Branch-filtered message history.', 'id:id page'),
-  E('post', '/v1/conversations/{id}/turns', 'createTurn', 'turns', 'Submit durable input and queue a turn. Returns 202 with the durable turn view.', 'id:id body idem async req:turn.TurnInput'),
+  E('post', '/v1/conversations/{id}/turns', 'createTurn', 'turns', 'Submit durable input and queue a turn. Returns 202 with the durable turn view.', 'id:id body idem async req:turn.TurnInput res:turn.TurnView'),
   E('get', '/v1/turns/{id}', 'getTurn', 'turns', 'Durable turn state. Carries no unvalidated model output.', 'id:id res:turn.TurnView'),
   E('post', '/v1/turns/{id}/cancel', 'cancelTurn', 'turns', 'Cancel a turn. Idempotent; returns committed if the commit already won.', 'id:id idem'),
   E('post', '/v1/turns/{id}/retry', 'retryTurn', 'turns', 'Create a permitted further attempt against the same durable input.', 'id:id idem'),
@@ -185,16 +185,38 @@ function bundleSchemas() {
 }
 
 // ---------------------------------------------------------------- the error matrix, applied uniformly
-const ERROR_STATUS = {
-  400: 'MALFORMED_REQUEST', 401: 'UNAUTHENTICATED', 403: 'FORBIDDEN', 404: 'NOT_FOUND',
-  409: 'STALE_REVISION, IDEMPOTENCY_CONFLICT or STATE_CONFLICT', 413: 'PAYLOAD_TOO_LARGE',
-  422: 'SCHEMA_REJECTED or DOMAIN_REJECTED', 428: 'PRECONDITION_REQUIRED',
-  429: 'QUOTA_EXCEEDED', 503: 'DEPENDENCY_UNAVAILABLE or FRESHNESS_UNAVAILABLE',
+// The normative status-to-code mapping from API.md. This is the ONLY place it lives, and it is
+// emitted as per-status schemas so the matrix is executable: a 401 carrying NOT_FOUND must fail
+// validation, not merely contradict a description.
+const STATUS_CODES = {
+  400: ['MALFORMED_REQUEST'],
+  401: ['UNAUTHENTICATED'],
+  403: ['FORBIDDEN'],
+  404: ['NOT_FOUND'],
+  409: ['STALE_REVISION', 'IDEMPOTENCY_CONFLICT', 'STATE_CONFLICT'],
+  413: ['PAYLOAD_TOO_LARGE'],
+  422: ['SCHEMA_REJECTED', 'DOMAIN_REJECTED'],
+  428: ['PRECONDITION_REQUIRED'],
+  429: ['QUOTA_EXCEEDED'],
+  503: ['DEPENDENCY_UNAVAILABLE', 'FRESHNESS_UNAVAILABLE'],
 };
 const errorResponse = (status) => ({
-  description: ERROR_STATUS[status],
-  content: { 'application/json': { schema: { $ref: '#/components/schemas/api-error' } } },
+  description: STATUS_CODES[status].join(' or '),
+  content: { 'application/json': { schema: { $ref: `#/components/schemas/api-error.${status}` } } },
 });
+function statusErrorComponents() {
+  const out = {};
+  for (const [status, codes] of Object.entries(STATUS_CODES)) {
+    out[`api-error.${status}`] = {
+      description: `An error response for HTTP ${status}. The code is constrained to what API.md maps to this status.`,
+      allOf: [
+        { $ref: '#/components/schemas/api-error' },
+        { type: 'object', properties: { error: { type: 'object', properties: { code: { enum: codes } }, required: ['code'] } }, required: ['error'] },
+      ],
+    };
+  }
+  return out;
+}
 
 function errorsFor(f) {
   const has = (x) => f.includes(x);
@@ -209,7 +231,7 @@ function errorsFor(f) {
 }
 
 function build() {
-  const components = bundleSchemas();
+  const components = { ...bundleSchemas(), ...statusErrorComponents() };
   const paths = {};
 
   for (const ep of ENDPOINTS) {
@@ -217,6 +239,14 @@ function build() {
     const has = (x) => f.includes(x);
     const op = { operationId: ep.operationId, tags: [ep.tag], summary: ep.summary, responses: {} };
 
+    const bound = (prefix) => {
+      const flag = f.find((x) => x.startsWith(prefix));
+      if (!flag) return null;
+      const name = flag.slice(prefix.length);
+      return name.startsWith('[]')
+        ? { type: 'array', maxItems: 100, items: { $ref: '#/components/schemas/' + name.slice(2) } }
+        : { $ref: '#/components/schemas/' + name };
+    };
     const params = [];
     for (const flag of f) {
       if (flag.startsWith('id:')) {
@@ -233,16 +263,15 @@ function build() {
     if (has('precond')) {
       params.push({ name: 'If-Match', in: 'header', required: true, description: 'Current revision, quoted. Absent is 428; stale is 409 STALE_REVISION.', schema: { type: 'string', minLength: 1, maxLength: 64 } });
     }
+    if (has('receipt')) {
+      params.push({ name: 'X-Deletion-Receipt', in: 'header', required: false, description: 'Narrowly scoped, expiring receipt issued by account erasure. Accepted INSTEAD of a session, because erasure revokes sessions immediately and the requester still needs to read status. Reveals status only. Raw receipt secrets are never logged (API.md).', schema: { type: 'string', minLength: 16, maxLength: 512 } });
+    }
+    if (has('search')) {
+      params.push({ name: 'q', in: 'query', required: false, description: 'Free-text search over approved previews only.', schema: { type: 'string', minLength: 1, maxLength: 200 } });
+      params.push({ name: 'tags', in: 'query', required: false, explode: true, style: 'form', description: 'Filter by catalog tag. Repeatable.', schema: { type: 'array', maxItems: 16, items: { type: 'string', minLength: 1, maxLength: 40 } } });
+    }
     if (params.length) op.parameters = params;
 
-    const bound = (prefix) => {
-      const flag = f.find((x) => x.startsWith(prefix));
-      if (!flag) return null;
-      const name = flag.slice(prefix.length);
-      return name.startsWith('[]')
-        ? { type: 'array', maxItems: 100, items: { $ref: '#/components/schemas/' + name.slice(2) } }
-        : { $ref: '#/components/schemas/' + name };
-    };
     if (has('body')) {
       const schema = bound('req:');
       op.requestBody = schema
@@ -264,7 +293,10 @@ function build() {
     } else if (okCode === '204') {
       op.responses['204'] = { description: 'Deleted.' };
     } else if (okCode === '202') {
-      op.responses['202'] = { description: 'Accepted. Returns an asynchronous operation resource.', content: { 'application/json': { schema: { $ref: '#/components/schemas/api-envelope.AsyncOperation' } } } };
+      const payload = bound('res:');
+      op.responses['202'] = payload
+        ? { description: 'Accepted. Returns the durable resource whose work continues; poll it rather than an operation wrapper.', content: { 'application/json': { schema: { type: 'object', properties: { data: payload, meta: { $ref: '#/components/schemas/api-envelope.Meta' } }, required: ['data', 'meta'], additionalProperties: false } } } }
+        : { description: 'Accepted. Returns an asynchronous operation resource.', content: { 'application/json': { schema: { $ref: '#/components/schemas/api-envelope.AsyncOperation' } } } };
     } else if (has('page')) {
       op.responses['200'] = { description: 'Paginated list.', content: { 'application/json': { schema: { $ref: '#/components/schemas/api-envelope.ListResponse' } } } };
     } else if (has('pub') && ep.tag === 'auth') {
@@ -285,8 +317,10 @@ function build() {
     }
 
     for (const status of errorsFor(f)) op.responses[String(status)] = errorResponse(status);
-    if (!has('pub')) op.security = has('admin') ? [{ sessionCookie: [], adminRole: [] }] : [{ sessionCookie: [] }];
-    else op.security = [];
+    if (has('pub')) op.security = [];
+    else if (has('admin')) op.security = [{ sessionCookie: [], adminRole: [] }];
+    else if (has('receipt')) op.security = [{ sessionCookie: [] }, { deletionReceipt: [] }];
+    else op.security = [{ sessionCookie: [] }];
 
     paths[ep.path] = paths[ep.path] ?? {};
     paths[ep.path][ep.method] = op;
@@ -328,6 +362,7 @@ function build() {
       securitySchemes: {
         sessionCookie: { type: 'apiKey', in: 'cookie', name: 'rce_session', description: 'Opaque Secure HttpOnly SameSite=Lax session cookie. CSRF protection applies on unsafe methods.' },
         adminRole: { type: 'apiKey', in: 'cookie', name: 'rce_session', description: 'The same session, additionally carrying an administration role granted by trusted administration only.' },
+        deletionReceipt: { type: 'apiKey', in: 'header', name: 'X-Deletion-Receipt', description: 'Narrowly scoped expiring receipt from account erasure. Grants status reads only, after the session it replaced was revoked.' },
       },
     },
   };
@@ -378,12 +413,36 @@ function structuralErrors(doc) {
       for (const prm of params) {
         if (prm.in === 'path' && !prm.required) errors.push(`${where}: path parameter ${prm.name} must be required`);
       }
+      for (const [code, res] of Object.entries(op.responses ?? {})) {
+        if (!/^[45]/.test(code)) continue;
+        const ref = res.content?.['application/json']?.schema?.$ref ?? '';
+        if (ref !== `#/components/schemas/api-error.${code}`) {
+          errors.push(`${where}: ${code} must reference api-error.${code} so its code set is constrained, got ${ref || 'no $ref'}`);
+        }
+      }
       const declared = new Set(params.filter(x => x.in === 'path').map(x => x.name));
       for (const m of p.matchAll(/\{([^}]+)\}/g)) {
         if (!declared.has(m[1])) errors.push(`${where}: path template {${m[1]}} has no declared parameter`);
       }
     }
   }
+  // every declared ErrorCode must be reachable from exactly one status, and no status may
+  // invent a code outside the enum. Catches the matrix and the enum drifting apart.
+  const enumCodes = doc.components.schemas['api-error']?.$defs?.ErrorCode?.enum
+    ?? doc.components.schemas['api-error.ErrorCode']?.enum ?? [];
+  const mapped = new Map();
+  for (const [name, schema] of Object.entries(doc.components.schemas)) {
+    const m = /^api-error\.(\d{3})$/.exec(name);
+    if (!m) continue;
+    const codes = schema.allOf?.[1]?.properties?.error?.properties?.code?.enum ?? [];
+    for (const c of codes) {
+      if (mapped.has(c)) errors.push(`error code ${c} is mapped to both ${mapped.get(c)} and ${m[1]}`);
+      mapped.set(c, m[1]);
+      if (enumCodes.length && !enumCodes.includes(c)) errors.push(`status ${m[1]} maps code ${c}, which is not in ErrorCode`);
+    }
+  }
+  for (const c of enumCodes) if (!mapped.has(c)) errors.push(`ErrorCode ${c} is not reachable from any HTTP status`);
+
   return errors;
 }
 
