@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:gates",
+  "title": "Access and eligibility gates",
+  "description": "Canonical wire identifiers for the separately-evaluated access checks (INV-030, INV-031). RCE-053. ADR-006 naming is canonical and there are five checks. Real-user age assurance is NOT a sixth identifier: it is part of account_access, which INV-030 defines as a conjunction that fails closed — an authenticated and authorized principal AND a valid current UserEligibility assurance are both required wherever adult access is evaluated. Assurance that is missing, expired or revoked denies through account_access with an assurance_* reason.",
+  "$defs": {
+    "GateId": {
+      "enum": [
+        "account_access",
+        "fictional_adult_eligibility",
+        "player_content_authorization",
+        "character_current_willingness",
+        "provider_capability"
+      ],
+      "description": "account_access: the principal is authenticated, authorized for this resource, AND carries a valid current UserEligibility assurance where adult access is evaluated — all three, failing closed (INV-030). fictional_adult_eligibility: the character's age is known and adult. player_content_authorization: the player's own content opt-in, outside fiction. character_current_willingness: the character's scoped, revocable in-fiction willingness. provider_capability: what the model adapter actually permits."
+    },
+    "GateOutcome": {
+      "enum": [
+        "satisfied",
+        "denied",
+        "unknown"
+      ],
+      "description": "'unknown' denies. A gate that cannot be evaluated is never treated as satisfied (INV-005, INV-030)."
+    },
+    "GateDenialReason": {
+      "enum": [
+        "not_authenticated",
+        "not_authorized",
+        "assurance_missing",
+        "assurance_expired",
+        "assurance_revoked",
+        "age_unknown",
+        "age_contested",
+        "age_below_adult",
+        "consent_absent",
+        "consent_revoked",
+        "consent_out_of_scope",
+        "willingness_unknown",
+        "willingness_declined",
+        "willingness_withdrawn",
+        "willingness_out_of_scope",
+        "provider_disallows",
+        "provider_unavailable"
+      ],
+      "description": "Stable reasons. Deliberately never includes preference, orientation, relationship status, relationship history, bodily response, repeated past action or silence — none of those may deny or satisfy any gate (INV-031)."
+    },
+    "GateEvaluation": {
+      "type": "object",
+      "properties": {
+        "gate": {
+          "$ref": "urn:rce:schema:gates#/$defs/GateId"
+        },
+        "outcome": {
+          "$ref": "urn:rce:schema:gates#/$defs/GateOutcome"
+        },
+        "reason": {
+          "$ref": "urn:rce:schema:gates#/$defs/GateDenialReason"
+        },
+        "evaluated_at": {
+          "$ref": "urn:rce:schema:common#/$defs/Utc"
+        },
+        "scope_note": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        }
+      },
+      "required": [
+        "gate",
+        "outcome",
+        "evaluated_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "denied"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "required": [
+              "reason"
+            ],
+            "properties": {
+              "reason": true
+            }
+          }
+        }
+      ]
+    },
+    "GateReport": {
+      "type": "object",
+      "description": "Every gate is reported exactly once, so a caller can never mistake an unevaluated or duplicated gate for a satisfied one. Constrained by identity rather than by array length: a report with account_access twice and willingness missing is rejected. A report is authoritative only for the moment it was evaluated; willingness in particular is rechecked at execution and at commit (INV-033).",
+      "properties": {
+        "evaluations": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:gates#/$defs/GateEvaluation"
+          },
+          "minItems": 5,
+          "maxItems": 5,
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "account_access"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "fictional_adult_eligibility"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "player_content_authorization"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "character_current_willingness"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            },
+            {
+              "contains": {
+                "type": "object",
+                "properties": {
+                  "gate": {
+                    "const": "provider_capability"
+                  }
+                },
+                "required": [
+                  "gate"
+                ]
+              }
+            }
+          ]
+        },
+        "permitted": {
+          "type": "boolean",
+          "description": "Derived, not asserted: true requires every outcome to be satisfied, false requires at least one that is not. Never a substitute for reading the individual outcomes."
+        }
+      },
+      "required": [
+        "evaluations",
+        "permitted"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "permitted": {
+                "const": true
+              }
+            },
+            "required": [
+              "permitted"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "evaluations": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "const": "satisfied"
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "permitted": {
+                "const": false
+              }
+            },
+            "required": [
+              "permitted"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "evaluations": {
+                "type": "array",
+                "contains": {
+                  "type": "object",
+                  "properties": {
+                    "outcome": {
+                      "enum": [
+                        "denied",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "outcome"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

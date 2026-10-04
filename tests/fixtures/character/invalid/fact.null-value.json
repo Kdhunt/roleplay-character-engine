@@ -1,0 +1,10 @@
+{
+  "knowledge_status": "known",
+  "value": null,
+  "authority": "explicit_author",
+  "lifetime": "release",
+  "provenance": {
+    "source_type": "author",
+    "effective_revision": 1
+  }
+}
