@@ -1,0 +1,16 @@
+{
+  "utterances": [
+    {
+      "kind": "narrator",
+      "text": "Rain begins to fall."
+    }
+  ],
+  "actions": [],
+  "claims": [],
+  "unresolved_references": [],
+  "model_revision": "fixture-deterministic-1",
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

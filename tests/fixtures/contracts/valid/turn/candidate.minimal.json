@@ -1,0 +1,18 @@
+{
+  "utterances": [
+    {
+      "kind": "character",
+      "speaker_instance_id": "44444444-4444-4444-8444-444444444444",
+      "addressees": [],
+      "text": "The road forks here."
+    }
+  ],
+  "actions": [],
+  "claims": [],
+  "unresolved_references": [],
+  "model_revision": "fixture-deterministic-1",
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

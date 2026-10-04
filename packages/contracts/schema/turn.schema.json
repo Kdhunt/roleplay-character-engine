@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:turn",
+  "title": "Turn contracts",
+  "description": "TurnInput, TurnView, CandidateTurn, ActionProposal and ValidationResult, per API.md and ADR-004/005. RCE-053. A CandidateTurn is a PROPOSAL: nothing in it is canon until validation passes and the commit transaction succeeds (INV-001, INV-028).",
+  "$defs": {
+    "TurnState": {
+      "enum": [
+        "queued",
+        "generating",
+        "validating",
+        "committed",
+        "failed",
+        "cancelled"
+      ],
+      "description": "committed, failed and cancelled are terminal. A model refusal is a failed turn outcome, never an HTTP auth error."
+    },
+    "TurnFailureCode": {
+      "enum": [
+        "provider_refused",
+        "invalid_candidate",
+        "unresolved_reference",
+        "dependency_failure",
+        "exhausted_attempts"
+      ]
+    },
+    "UtteranceKind": {
+      "enum": [
+        "character",
+        "narrator",
+        "system"
+      ],
+      "description": "A narrator utterance declares itself rather than impersonating a player (API.md). There is no 'player' kind: player input is durable input, not generated output."
+    },
+    "TurnInput": {
+      "type": "object",
+      "properties": {
+        "client_message_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid",
+          "description": "Client-durable uniqueness that outlives idempotency-key retention, so a retry cannot duplicate chat input."
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384,
+          "description": "Baseline cap. maxLength bounds CHARACTERS; the 16 KiB UTF-8 byte limit from API.md is a separate check and is the binding one for multibyte text."
+        },
+        "persona_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "addressee_instance_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/Uuid"
+          },
+          "maxItems": 4,
+          "description": "At most four AI-controlled instances per conversation (ADR-001)."
+        },
+        "expected_scene_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        },
+        "content_mode": {
+          "type": "string",
+          "maxLength": 40
+        }
+      },
+      "required": [
+        "client_message_id",
+        "text",
+        "persona_id",
+        "expected_scene_revision"
+      ],
+      "additionalProperties": false
+    },
+    "TurnView": {
+      "type": "object",
+      "description": "The durable, pollable state of a turn. Carries no unvalidated model output in v1 (ADR-005).",
+      "properties": {
+        "turn_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "conversation_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "state": {
+          "$ref": "urn:rce:schema:turn#/$defs/TurnState"
+        },
+        "failure_code": {
+          "$ref": "urn:rce:schema:turn#/$defs/TurnFailureCode"
+        },
+        "scene_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        },
+        "committed_message_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/Uuid"
+          },
+          "maxItems": 32
+        },
+        "created_at": {
+          "$ref": "urn:rce:schema:common#/$defs/Utc"
+        },
+        "updated_at": {
+          "$ref": "urn:rce:schema:common#/$defs/Utc"
+        }
+      },
+      "required": [
+        "turn_id",
+        "conversation_id",
+        "state",
+        "created_at",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "failed"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "failure_code"
+            ],
+            "properties": {
+              "failure_code": true
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "committed"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "scene_revision",
+              "committed_message_ids"
+            ],
+            "properties": {
+              "scene_revision": true,
+              "committed_message_ids": true
+            }
+          }
+        }
+      ]
+    },
+    "Utterance": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "$ref": "urn:rce:schema:turn#/$defs/UtteranceKind"
+        },
+        "speaker_instance_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "addressees": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/Uuid"
+          },
+          "maxItems": 8
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "character"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "speaker_instance_id"
+            ],
+            "properties": {
+              "speaker_instance_id": true
+            }
+          }
+        }
+      ]
+    },
+    "ActionProposal": {
+      "type": "object",
+      "description": "A proposed change to physical or relational state. Always a proposal: it carries evidence, never authority (INV-004).",
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{1,60}$"
+        },
+        "actor_instance_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "target_refs": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "$ref": "urn:rce:schema:common#/$defs/Uuid"
+          }
+        },
+        "phase": {
+          "enum": [
+            "proposed",
+            "active",
+            "paused",
+            "interrupted",
+            "completed"
+          ]
+        },
+        "source_span": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "action_type",
+        "actor_instance_id",
+        "phase",
+        "source_span"
+      ],
+      "additionalProperties": false
+    },
+    "Claim": {
+      "type": "object",
+      "description": "An assertion extracted from generated text. Authority is always 'derived' here — an extractor cannot mint canon (INV-004).",
+      "properties": {
+        "path": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "value": {
+          "not": {
+            "type": "null"
+          }
+        },
+        "authority": {
+          "const": "derived"
+        },
+        "source_span": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "path",
+        "value",
+        "authority",
+        "source_span"
+      ],
+      "additionalProperties": false
+    },
+    "CandidateTurn": {
+      "type": "object",
+      "properties": {
+        "utterances": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:turn#/$defs/Utterance"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:turn#/$defs/ActionProposal"
+          },
+          "maxItems": 32
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:rce:schema:turn#/$defs/Claim"
+          },
+          "maxItems": 64
+        },
+        "unresolved_references": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "$ref": "urn:rce:schema:common#/$defs/ShortText"
+              },
+              "reason": {
+                "enum": [
+                  "ambiguous",
+                  "unknown_entity",
+                  "out_of_scope"
+                ]
+              }
+            },
+            "required": [
+              "text",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "model_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/ShortText"
+        },
+        "usage": {
+          "type": "object",
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "input_tokens",
+            "output_tokens"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "utterances",
+        "actions",
+        "claims",
+        "unresolved_references",
+        "model_revision",
+        "usage"
+      ],
+      "additionalProperties": false
+    },
+    "ValidationResult": {
+      "type": "object",
+      "description": "Per DOMAIN.md. A rejected candidate never becomes accepted history (INV-028).",
+      "properties": {
+        "outcome": {
+          "enum": [
+            "valid",
+            "needs_clarification",
+            "rejected"
+          ]
+        },
+        "issues": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Z0-9_]{2,60}$"
+              },
+              "severity": {
+                "enum": [
+                  "info",
+                  "warning",
+                  "error"
+                ]
+              },
+              "invariant": {
+                "type": "string",
+                "pattern": "^INV-[0-9]{3}$",
+                "description": "The invariant this issue violates, where one applies. Cited rather than restated."
+              },
+              "offending_span": {
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "start",
+                  "end"
+                ],
+                "additionalProperties": false
+              },
+              "expected_fact": {
+                "$ref": "urn:rce:schema:common#/$defs/ShortText"
+              },
+              "repair_hint": {
+                "$ref": "urn:rce:schema:common#/$defs/ShortText"
+              }
+            },
+            "required": [
+              "code",
+              "severity"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "outcome",
+        "issues"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "outcome": {
+                "const": "rejected"
+              }
+            },
+            "required": [
+              "outcome"
+            ]
+          },
+          "then": {
+            "properties": {
+              "issues": {
+                "minItems": 1,
+                "type": "array"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
