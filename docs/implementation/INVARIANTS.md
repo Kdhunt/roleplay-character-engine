@@ -80,7 +80,7 @@ Nothing here asserts that the described behavior is implemented. RCE-061 bootstr
 
 **INV-030** Five checks are evaluated separately and each independently denies: account access, fictional adulthood, player content authorization, character current willingness, and provider capability. ADR-006 naming is canonical. **Account access is itself a conjunction and fails closed:** wherever adult access is evaluated, the request requires an authenticated principal, authorization for the resource, AND a valid current UserEligibility assurance. Assurance that is missing, expired or revoked denies, and a successful authentication never substitutes for it. The two are distinct records — UserAccount and UserEligibility — and neither implies the other.
 
-**INV-031** No gate may be derived from another, and none may be derived from preference, orientation, relationship status, relationship history, bodily response, repeated past action or silence.
+**INV-031** No gate may be derived from another, and none may be derived from preference, orientation, relationship status, relationship history, bodily response, repeated past action, silence, or the setting, location, environment or time of day in which a scene takes place. Where a scene happens carries social expectations; it carries no authorization. A location change may still put a request outside a willingness scope affirmed for the prior context, denying it pending revalidation under INV-033 — that is scope expiry, not derivation, and it can only ever withdraw permission rather than grant it.
 
 **INV-032** Fictional adulthood requires an unambiguously adult age. Unknown or conflicting age fails the check, and adulthood is never inferred from appearance, anatomy, species or archetype name.
 

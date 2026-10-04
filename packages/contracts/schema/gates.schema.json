@@ -42,7 +42,7 @@
         "provider_disallows",
         "provider_unavailable"
       ],
-      "description": "Stable reasons. Deliberately never includes preference, orientation, relationship status, relationship history, bodily response, repeated past action or silence — none of those may deny or satisfy any gate (INV-031)."
+      "description": "Stable reasons. Deliberately never includes preference, orientation, relationship status, relationship history, bodily response, repeated past action, silence, or the setting or location of the scene — none of those may deny or satisfy any gate (INV-031). Where a scene happens carries social expectations; it carries no authorization."
     },
     "GateEvaluation": {
       "type": "object",
