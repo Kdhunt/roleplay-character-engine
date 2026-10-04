@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:common",
+  "title": "Shared definitions",
+  "description": "Common building blocks for RCE contract schemas. RCE-003. Identifiers are URNs and are not dereferenceable.",
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "Utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$",
+      "description": "RFC 3339 timestamp in UTC. A non-UTC offset is rejected."
+    },
+    "Revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonic per-entity revision used for optimistic concurrency (INV-025)."
+    },
+    "SchemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the schema this record was written against."
+    },
+    "ShortText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "MediumText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "LongText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "KnowledgeStatus": {
+      "enum": [
+        "known",
+        "unknown",
+        "contested"
+      ],
+      "description": "World-level epistemic state of the record in authoritative storage, NOT any character's belief. 'known': canon records a value. 'unknown': canon records that no value is established. 'contested': two equal-authority facts conflict (INV-006). A character's confidence in a proposition is a separate Belief record (INV-008)."
+    },
+    "Authority": {
+      "enum": [
+        "explicit_author",
+        "canonical",
+        "imported",
+        "derived",
+        "default"
+      ],
+      "description": "Totally ordered, highest first (INV-002). A value may only be replaced by one of equal or higher authority."
+    },
+    "LockState": {
+      "enum": [
+        "unlocked",
+        "locked"
+      ],
+      "description": "A lock prevents model-derived edits; it does not prevent an authorized scoped author operation (INV-007)."
+    },
+    "Lifetime": {
+      "enum": [
+        "core",
+        "release",
+        "scenario",
+        "scene",
+        "momentary",
+        "derived"
+      ],
+      "description": "Explicit per-property lifetime (ADR-007)."
+    },
+    "OwnerScope": {
+      "type": "object",
+      "description": "Ownership is a stored edge, never inferred from the payload (INV-018).",
+      "properties": {
+        "owner_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "owner_id"
+      ],
+      "additionalProperties": false
+    },
+    "ContinuityScope": {
+      "type": "object",
+      "description": "Continuity-scoped rows carry their scope explicitly (INV-017, INV-020, INV-021).",
+      "properties": {
+        "owner_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "continuity_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "branch_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "owner_id",
+        "continuity_id",
+        "branch_id"
+      ],
+      "additionalProperties": false
+    },
+    "Extensions": {
+      "type": "object",
+      "description": "Inert namespaced extension data. Never interpreted, always preserved across round-trip and migration. Keys must be 'vendor.name'; unknown fields anywhere else are rejected rather than silently kept.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]{1,30}\\.[a-z][a-z0-9_-]{1,60}$"
+      },
+      "additionalProperties": true,
+      "maxProperties": 64
+    },
+    "Provenance": {
+      "type": "object",
+      "properties": {
+        "source_type": {
+          "enum": [
+            "author",
+            "import",
+            "turn_event",
+            "preset",
+            "system"
+          ]
+        },
+        "source_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "source_span": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        "effective_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        }
+      },
+      "required": [
+        "source_type",
+        "effective_revision"
+      ],
+      "additionalProperties": false
+    },
+    "PinnedVersions": {
+      "type": "object",
+      "description": "Pinned, not floating. Resolution of a pinned release is reproducible (INV-013).",
+      "properties": {
+        "schema_version": {
+          "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+        },
+        "archetype_release_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "anatomy_preset_release_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        }
+      },
+      "required": [
+        "schema_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

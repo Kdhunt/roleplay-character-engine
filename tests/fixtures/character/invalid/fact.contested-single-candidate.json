@@ -1,0 +1,19 @@
+{
+  "knowledge_status": "contested",
+  "authority": "canonical",
+  "lifetime": "release",
+  "provenance": {
+    "source_type": "author",
+    "effective_revision": 1
+  },
+  "candidates": [
+    {
+      "value": "auburn",
+      "authority": "canonical",
+      "provenance": {
+        "source_type": "author",
+        "effective_revision": 1
+      }
+    }
+  ]
+}

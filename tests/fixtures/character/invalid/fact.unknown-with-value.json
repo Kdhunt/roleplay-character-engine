@@ -1,0 +1,10 @@
+{
+  "knowledge_status": "unknown",
+  "value": "green",
+  "authority": "derived",
+  "lifetime": "release",
+  "provenance": {
+    "source_type": "turn_event",
+    "effective_revision": 1
+  }
+}

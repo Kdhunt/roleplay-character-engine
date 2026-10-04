@@ -1,0 +1,34 @@
+{
+  "release_id": "33333333-3333-4333-8333-333333333333",
+  "core_id": "22222222-2222-4222-8222-222222222222",
+  "schema_version": "1.0.0",
+  "title": "Test character",
+  "display_name": "Ada",
+  "pronouns": [
+    "she",
+    "her"
+  ],
+  "age_years": 27,
+  "public_summary": "A cartographer who keeps her maps to herself.",
+  "goals": [
+    {
+      "id": "find_vault",
+      "statement": "Locate the sealed vault",
+      "visibility": "private"
+    }
+  ],
+  "appearance": {
+    "attributes": {
+      "eye_color": {
+        "knowledge_status": "known",
+        "value": "green",
+        "authority": "explicit_author",
+        "lifetime": "release",
+        "provenance": {
+          "source_type": "author",
+          "effective_revision": 1
+        }
+      }
+    }
+  }
+}

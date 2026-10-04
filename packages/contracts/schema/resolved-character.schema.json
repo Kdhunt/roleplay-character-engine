@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:rce:schema:resolved-character",
+  "title": "ResolvedCharacter",
+  "description": "The computed view an instance presents to the engine: preset and archetype defaults, then explicit core values, then authorized scenario overrides (INV-010). Derived and never stored as truth — it is reproducible from its inputs, which is what resolution_hash asserts. RCE-055 owns the resolution algorithm; this schema fixes only the shape of its output.",
+  "type": "object",
+  "properties": {
+    "instance_id": {
+      "$ref": "urn:rce:schema:common#/$defs/Uuid"
+    },
+    "scope": {
+      "$ref": "urn:rce:schema:common#/$defs/ContinuityScope"
+    },
+    "schema_version": {
+      "$ref": "urn:rce:schema:common#/$defs/SchemaVersion"
+    },
+    "resolved_at": {
+      "$ref": "urn:rce:schema:common#/$defs/Utc"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Everything that determined this view. Resolution is reproducible only if all of it is pinned.",
+      "properties": {
+        "source_release_id": {
+          "$ref": "urn:rce:schema:common#/$defs/Uuid"
+        },
+        "instance_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        },
+        "pins": {
+          "$ref": "urn:rce:schema:common#/$defs/PinnedVersions"
+        }
+      },
+      "required": [
+        "source_release_id",
+        "instance_revision",
+        "pins"
+      ],
+      "additionalProperties": false
+    },
+    "resolution_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fields": {
+      "type": "object",
+      "description": "Resolved values keyed by dotted path. Each records which layer supplied it, so a reviewer can see why a value is what it is and no layer's contribution is anonymous.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{1,40}(\\.[a-z0-9_]{1,40}){0,4}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "not": {
+              "type": "null"
+            }
+          },
+          "knowledge_status": {
+            "$ref": "urn:rce:schema:common#/$defs/KnowledgeStatus"
+          },
+          "authority": {
+            "$ref": "urn:rce:schema:common#/$defs/Authority"
+          },
+          "supplied_by": {
+            "enum": [
+              "preset_default",
+              "archetype_default",
+              "core",
+              "scenario_override"
+            ],
+            "description": "Which layer won for this field."
+          },
+          "lock_state": {
+            "$ref": "urn:rce:schema:common#/$defs/LockState"
+          }
+        },
+        "required": [
+          "knowledge_status",
+          "authority",
+          "supplied_by"
+        ],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "knowledge_status": {
+                  "const": "known"
+                }
+              },
+              "required": [
+                "knowledge_status"
+              ]
+            },
+            "then": {
+              "required": [
+                "value"
+              ],
+              "properties": {
+                "value": true
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "knowledge_status": {
+                  "const": "unknown"
+                }
+              },
+              "required": [
+                "knowledge_status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "value": false
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "knowledge_status": {
+                  "const": "contested"
+                }
+              },
+              "required": [
+                "knowledge_status"
+              ]
+            },
+            "then": {
+              "properties": {
+                "value": false
+              }
+            }
+          }
+        ]
+      },
+      "maxProperties": 512
+    },
+    "unresolved": {
+      "type": "array",
+      "description": "Paths that could not be resolved. Present so an engine reads 'unresolved' rather than inventing confirmation (INV-016).",
+      "maxItems": 128,
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "reason": {
+            "enum": [
+              "missing_preset_field",
+              "contested",
+              "absent_structure",
+              "unknown_reference"
+            ]
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "instance_id",
+    "scope",
+    "schema_version",
+    "resolved_at",
+    "inputs",
+    "resolution_hash",
+    "fields"
+  ],
+  "additionalProperties": false
+}

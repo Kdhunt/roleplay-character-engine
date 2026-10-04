@@ -1,0 +1,27 @@
+{
+  "id": "77777777-7777-4777-8777-777777777777",
+  "owner_id": "11111111-1111-4111-8111-111111111111",
+  "schema_version": "1.0.0",
+  "revision": 1,
+  "created_at": "2026-09-05T00:00:00Z",
+  "updated_at": "2026-09-05T00:00:00Z",
+  "display_name": "Wren",
+  "pronouns": [
+    "they",
+    "them"
+  ],
+  "age": {
+    "knowledge_status": "known",
+    "value": 31,
+    "authority": "explicit_author",
+    "lifetime": "release",
+    "provenance": {
+      "source_type": "author",
+      "effective_revision": 1
+    }
+  },
+  "agency": {
+    "ai_may_narrate_persona_actions": false,
+    "ai_may_infer_persona_thoughts": false
+  }
+}
