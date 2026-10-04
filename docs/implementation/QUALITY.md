@@ -20,7 +20,7 @@ Implementation is present and reviewed; acceptance tests run; contracts/client t
 6. Manipulator occupancy, clothing removal, object containment and relative pose transitions remain possible across multiple participants. Coarse proximity alone is not proof of impossible geometry.
 7. Characters do not know private facts they never perceived; false beliefs do not change world truth; summaries cannot leak hidden sources.
 8. Stable voice, values and anti-expressions remain active in adult-mode metadata fixtures. No graphic prose is needed to test mode consistency. Pattern detectors distinguish prohibited character behavior from mere words and from legitimate development.
-9. Real-user eligibility, fictional age, player opt-in, character willingness and provider approval each independently deny when missing/revoked. A relationship, preference, bodily response or silence does not substitute for consent.
+9. Real-user eligibility, fictional age, player opt-in, character willingness and provider approval each independently deny when missing/revoked. A relationship, preference, bodily response or silence does not substitute for consent, and neither does the setting: the same request in a bedroom and in a kitchen produces the same gate outcomes.
 10. Duplicate send and duplicate outbox delivery yield one canonical turn. Stale revision does not overwrite state.
 11. Cancellation/commit races have one durable outcome; a late worker cannot commit after fencing. Retry does not create duplicate user input.
 12. Edits/regeneration create isolated branches and exclude abandoned branch memories. A failed replacement leaves original active branch intact.
