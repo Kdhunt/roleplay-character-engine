@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "Not permitted.",
+    "retryable": false
+  }
+}
