@@ -1,6 +1,6 @@
 # Implementation baseline
 
-Audit snapshot: 2026-09-05. These documents specify the product; they do not claim its application code already exists.
+Audit snapshot: 2026-10-04. These documents specify the product; they do not claim its application code already exists.
 
 ## Start here
 

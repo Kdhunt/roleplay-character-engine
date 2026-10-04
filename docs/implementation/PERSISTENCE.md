@@ -115,10 +115,10 @@ Mapped to QUALITY.md's mandatory regression fixtures; RCE-081, RCE-012, RCE-073 
 | Fresh and upgrade migration | 1, 2 | RCE-081 |
 | Cross-owner access denied by constraint | 1 | RCE-081 |
 | Two continuities from one core stay separate | 2 | RCE-081, RCE-012 |
-| Replay determinism under pinned rule versions | — | RCE-012 |
+| Replay determinism under pinned rule versions | 22 | RCE-012 |
 | Replay over a tombstoned payload | 15 | RCE-012, RCE-077 |
-| A failed required effect rejects the whole turn | — | RCE-018, RCE-012 |
-| Routine-only turn commits zero memory effects | — | RCE-028 |
+| A failed required effect rejects the whole turn | 19 | RCE-018, RCE-012 |
+| Routine-only turn commits zero memory effects | 23 | RCE-028 |
 | Concurrent writes, stale revision rejected | 10 | RCE-012 |
 | Failed commit leaves no partial state | 10, 11 | RCE-012, RCE-073 |
 | Duplicate send and duplicate outbox delivery | 10 | RCE-073 |
@@ -138,12 +138,4 @@ Recorded for owner decision; not defaulted by an agent. Numbering is stable and 
 
 3. **Snapshot cadence is unset.** Replay cost grows with branch length. A snapshot every N events bounds it, but N is an engineering decision needing a measured baseline, which does not exist until RCE-083. Recommend an explicit configured value with a conservative default rather than an implicit one, so the number is visible and revisable. ADR-004 already requires RCE-025/028/037 to benchmark a compact context budget on shared continuity fixtures; snapshot cadence should be measured in the same exercise.
 
-4. **Three requirements have no fixture, and each needs an owner before anything downstream may claim it is proven.** None of QUALITY.md's eighteen fixtures covers them, and the verification table above marks them with an em dash rather than borrowing a fixture that does not test them.
-
-   | Requirement | Proposed fixture owner | Why no existing fixture covers it |
-   | --- | --- | --- |
-   | Replay determinism under pinned rule versions | RCE-012 | Fixture 10 tests duplicate delivery and stale revisions, not replay equivalence under a pinned rule set |
-   | A failed required effect rejects the whole turn | RCE-018 | No fixture forces a failure between the event, utterance, effect, projection, outcome and outbox writes; this is the same gap as INV-023 |
-   | A routine-only turn commits zero memory effects | RCE-028 | Nothing asserts an upper bound on effects, so an over-eager extractor writing a memory per action passes every existing test |
-
-   The third is the load-bearing one: it is the only check that would catch the behavior ADR-004 exists to prevent.
+4. **Fixture coverage — RESOLVED 2026-10-04.** All three now have a mandatory fixture in QUALITY.md: replay determinism under pinned rule versions is fixture 22 (RCE-012), a failed required effect rejecting the whole turn is fixture 19 (RCE-018, and the same fixture that covers INV-023), and a routine-only turn committing zero memory effects is fixture 23 (RCE-028). The third was the load-bearing one — it is the only check that catches an over-eager extractor writing a memory per narrated action, which is the behavior ADR-004 exists to prevent.

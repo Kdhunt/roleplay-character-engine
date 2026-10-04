@@ -30,6 +30,11 @@ Implementation is present and reviewed; acceptance tests run; contracts/client t
 16. Hostile card instructions, XSS, CSRF, SSRF, malformed schemas, forged owner fields and oversized payloads cannot escape the permitted domain.
 17. Registration, verification, recovery, selection, scenario creation, conversation, resume, settings, export and deletion complete through the real browser/API/database stack using synthetic model fixtures.
 18. Phone keyboard, touch controls, keyboard-only operation, screen-reader labels, zoom, contrast, focus and private-cache behavior are verified manually and automatically.
+19. A failure injected between any pair of the accepted-turn writes — domain events, validated utterances, required effects, current projections, the required-state completion revision, the turn outcome and outbox intent — leaves none of them present. A required effect that cannot be applied rejects the whole turn rather than committing a partial one, and the user's input message remains durable without being marked a successful mutation.
+20. Two contradicting facts of equal authority produce an explicit contested record carrying both candidates with their own provenance. Neither silently wins, neither is discarded, and no consumer is handed one candidate as the resolved value.
+21. No model call, network request, external service call or uncontrolled clock read occurs inside a commit transaction or a replay reducer. Generation and extraction complete before the transaction opens.
+22. Replay over the same accepted events under pinned extraction, selection and rule versions reproduces the same state. Replay across a tombstoned payload yields state marked incomplete rather than failing or inventing a value.
+23. A routine-only turn commits zero retained-memory effects. An extractor that writes an observation or memory for every narrated action fails this fixture; required facts and active constraints are unaffected by it.
 
 Use synthetic users and fictional characters with explicit ages 27 and 31 for normal fixtures. Underage/unknown cases use metadata-only rejection tests; never generate sexual content for them. Do not place real user transcripts or intimate content in public test artifacts.
 
