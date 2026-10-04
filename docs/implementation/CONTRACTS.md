@@ -2,13 +2,15 @@
 
 Source: RCE-053 (https://trello.com/c/LOuL7U3K). Snapshot 2026-09-05. Depends on RCE-001 and RCE-003.
 
-**This is task 1 of 3.** RCE-053 is a large story and QUALITY.md requires large stories to be split into contract, implementation and integration sections with their own acceptance evidence. This change delivers the shared contract foundation every endpoint depends on. It does **not** deliver the OpenAPI 3.1 document or the per-endpoint operations.
+**Tasks 1 and 2 of 3 have landed.** RCE-053 is a large story and QUALITY.md requires large stories to be split into contract, implementation and integration sections with their own acceptance evidence. Task 1 delivered the shared contract foundation; task 2 delivered the executable OpenAPI document over every path in API.md. Task 3 — generated client types — remains blocked on RCE-061.
 
 | Task | Contents | Status |
 | --- | --- | --- |
-| 1 — shared contracts | gate identifiers, error model and status matrix, response envelopes, turn objects, SSE events, fixtures | this change |
-| 2 — OpenAPI document | every path in API.md as an operation, with parameters, request bodies, responses and the error matrix bound per operation | not started |
-| 3 — generated client types and spec lint | typed client generation, `spec:check` wiring, drift regression | blocked on RCE-061 |
+| 1 — shared contracts | gate identifiers, error model and status matrix, response envelopes, turn objects, SSE events, fixtures | landed |
+| 2 — OpenAPI document | every path in API.md as an operation, with parameters, request bodies, responses and the error matrix bound per operation | landed |
+| 3 — generated client types | typed client generation from the document | blocked on RCE-061 |
+
+Task 3 shrank: the drift check that was going to wait for `spec:check` is dependency-free, so it already runs in CI. Only client-type generation still needs the workspace.
 
 ## Gate-name reconciliation
 
@@ -48,6 +50,24 @@ A resource response carries `data` and `meta`; a list carries `data`, `page` and
 
 `AsyncOperation` covers write endpoints whose work outlives the response. A `succeeded` operation must reference a resource and must not carry an error; a `failed` one must carry an error and must not reference a resource. Neither combination is representable.
 
+## The OpenAPI document
+
+`packages/contracts/openapi.json` is **generated** by `scripts/build-openapi.mjs` from a single endpoint table, not hand-written. The surface is 100 operations sharing one error matrix, one idempotency rule and one precondition rule; hand-copying those into every operation is how a specification acquires 100 slightly different error sets. The table is the reviewable artifact and the generator applies the cross-cutting rules uniformly.
+
+Component schemas are **bundled** from `packages/contracts/schema` so there is one source of truth. Those files identify themselves with `urn:rce:schema:` URNs, which are stable but deliberately not dereferenceable, and no OpenAPI tool can resolve them — so the generator rewrites every URN reference into a local `#/components/schemas/` pointer and drops the `$id` and `$schema` keywords a bundled component should not carry. A `$defs` entry becomes `name.DefName`. The check asserts no URN survives.
+
+Cross-cutting rules, applied from flags rather than repeated per operation:
+
+| Rule | Applied when |
+| --- | --- |
+| 401 and 429 | any operation requiring a session |
+| 403 and 404 | any operation addressing a resource by path id |
+| 413 and 422 | any operation accepting a body |
+| 409 | any idempotent write or precondition operation |
+| 428 plus a required `If-Match` | any versioned update or delete |
+| required `Idempotency-Key` | any operation creating a resource or work |
+| 503 | every operation, without exception |
+
 ## Turn contracts
 
 `TurnInput`, `TurnView`, `CandidateTurn`, `ActionProposal`, `Claim` and `ValidationResult`, per API.md and ADR-004/005. Three structural points worth naming:
@@ -64,14 +84,18 @@ Five types on `GET /v1/conversations/{id}/events`: `turn.status`, `turn.committe
 
 ## Verification
 
-Validated with ajv 8 in strict mode: 14 schemas compile, 58 fixtures across both manifests produce their expected outcomes (27 from RCE-003, 31 here).
+Validated with ajv 8 in strict mode: 14 schemas compile, 58 fixtures across both manifests produce their expected outcomes (27 from RCE-003, 31 here). That run uses a scratch directory, because the repository still has no dependencies or test runner — so it remains authoring evidence rather than a passing repository test until RCE-061.
 
-As with RCE-003, that run used a scratch directory. **This repository still has no dependencies, lockfile or test runner, so no committed command reproduces it.** Task 3 wires it into `spec:check` once RCE-061 exists. Treat this as authoring evidence, not a passing repository test.
+**The OpenAPI document is different: its check is committed and runs in CI.** `node scripts/build-openapi.mjs --check` regenerates the document from the endpoint table, fails if the committed file has drifted, and asserts structural invariants with no dependencies at all — every `$ref` resolves locally, no `urn:` identifier survived bundling, every operation has a success response and a 503, every authenticated operation has a 401 and a 429, every `If-Match` parameter has a matching 428 and vice versa, every `Idempotency-Key` has a 409, and every path template has a declared required parameter. It is wired into `spec-check.yml` beside the planning checks.
+
+Meta-schema conformance was verified separately with `@seriousme/openapi-schema-validator` in a scratch directory; that part is not yet reproducible from a committed command.
 
 ## Unresolved
 
 1. **Five gates — RESOLVED by the owner on RCE-001.** ADR-006 naming is canonical and there are five identifiers; real-user assurance lives inside `account_access`, which INV-030 defines as a fail-closed conjunction. Dependent controllers may adopt these field names.
-2. **No OpenAPI document yet.** Task 2. Until it exists, "one explicit API" is a goal rather than a fact, and the shapes here are not bound to any route.
+2. **OpenAPI document — DELIVERED, with one honest gap.** `packages/contracts/openapi.json` covers 100 operations over 77 paths with 49 bundled component schemas, validated against the OpenAPI 3.1 meta-schema. The shapes from task 1 are now bound to routes, so "one explicit API" is a fact for the endpoints API.md enumerates.
+
+   **The gap: 40 of the request bodies are typed only as `object`.** Task 1 defined the turn objects, gates, error model and envelopes; it did not define payloads like `ScenarioCreate`, `CorrectionInput` or `AccountPreferences`. Rather than invent those shapes, each untyped body carries a description saying so and naming the per-group work that owns it. Twelve operations are fully typed where a task-1 schema genuinely applies. An untyped body is a known hole, not an oversight, and no controller should treat `object` as permission to accept anything.
 3. **Idempotency-key retention is stated but not modelled.** API.md sets 24 hours, and `client_message_id` covers duplication beyond that window. Neither appears in a schema, because both are storage and middleware concerns — RCE-073 and RCE-002 own them. Recorded so the gap is visible rather than assumed handled.
 4. **`FRESHNESS_UNAVAILABLE` status — PROPOSAL, awaiting owner approval.** ADR-004 requires generation to pause with an explicit retryable dependency or freshness failure; API.md's status list predates that decision and has no code for the outcome, so this code is an addition rather than a transcription.
 

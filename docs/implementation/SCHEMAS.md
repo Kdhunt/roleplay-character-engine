@@ -66,6 +66,8 @@ RCE-053 should wire this manifest into `spec:check` once the workspace exists. U
 
 ## Unresolved
 
-1. **No committed validator.** The evidence above cannot currently be reproduced by anyone running a repository command. This is a gap in provability, not in the artifacts. RCE-061 provides the runner; RCE-053 should own the wiring.
+1. **No committed validator for the fixtures.** The ajv evidence above cannot be reproduced by a repository command, because there is no dependency manifest or test runner until RCE-061. This is a gap in provability, not in the artifacts.
+
+   Partially closed since: the OpenAPI document added by RCE-053 task 2 *does* carry a committed, dependency-free check (`node scripts/build-openapi.mjs --check`) wired into CI. That pattern does not extend to these fixtures, which need a real JSON Schema validator rather than structural assertions.
 2. **`LongText` at 20000 characters is a guess.** Field length caps are enforced but unmeasured. `background` in particular drives context budget, which ADR-004 requires RCE-025/028/037 to benchmark. Revisit the caps with that measurement rather than defending these numbers.
 3. **Anatomy structure identifiers are UUID references only.** These schemas do not define the structure registry itself — RCE-006 and RCE-051 own it. A fixture referencing a structure cannot currently be checked for referential integrity, only for shape.
