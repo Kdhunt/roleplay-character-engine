@@ -14,6 +14,8 @@ JSONB is permitted only for versioned extensible leaves — an entity's inert na
 
 Conventions: singular table names, UUID primary keys, UTC timestamps, integer revisions, `schema_version` on every persisted entity.
 
+**The event log is partitioned by continuity** (owner decision, 2026-10-04). Event sequence numbers are therefore monotonic within a continuity and carry no global ordering: a consumer needing a total order keys on (`continuity_id`, `sequence`). Replay is bounded by one continuity's history, and erasure fan-out is a scoped delete within a partition rather than an installation-wide scan. Cross-continuity audit is a deliberate fan-out query across partitions, treated as an administrative operation rather than a hot path.
+
 ## Aggregates and ownership
 
 Five aggregate families, each with its own consistency boundary and revision.
@@ -132,10 +134,34 @@ Mapped to QUALITY.md's mandatory regression fixtures; RCE-081, RCE-012, RCE-073 
 
 Recorded for owner decision; not defaulted by an agent. Numbering is stable and independent of INVARIANTS.md.
 
-1. **Retention durations are undecided.** The categories above are settled; how long each is kept is not, and it is a launch decision under RCE-089 alongside privacy terms and recovery targets. RCE-077 cannot be completed without it.
+1. **Retention durations — PROPOSAL, awaiting owner approval.** The four categories are settled; the durations are not, and they are a launch decision under RCE-089 alongside the privacy terms. RCE-077 cannot be completed without them.
 
-2. **Event log partitioning is unchosen.** A single global append log is simplest and makes cross-continuity audit trivial; partitioning per continuity bounds replay cost and makes erasure fan-out cheaper. The choice affects RCE-012's replay design and RCE-081's schema, and should be made before either starts. Recommend per-continuity partitioning unless cross-continuity audit is a stated requirement.
+   **Proposed.** Canonical content: retained while the account exists, erased on user request or account deletion, with no fixed expiry. Derived artifacts: no independent retention at all — they live exactly as long as their source and are rebuildable, so erasure of a source purges them immediately. Operational telemetry: 30 days. Audit and integrity metadata: 12 months after the related content is erased, then removed unless a legal hold applies.
 
-3. **Snapshot cadence is unset.** Replay cost grows with branch length. A snapshot every N events bounds it, but N is an engineering decision needing a measured baseline, which does not exist until RCE-083. Recommend an explicit configured value with a conservative default rather than an implicit one, so the number is visible and revisable. ADR-004 already requires RCE-025/028/037 to benchmark a compact context budget on shared continuity fixtures; snapshot cadence should be measured in the same exercise.
+   **Rejected: one global retention period.** It collapses four categories whose risk profiles differ by orders of magnitude — a trace and a character's private history do not belong on the same clock.
+
+   **Rejected: indefinite telemetry.** Unbounded retention of operational data buys nothing after the incident window and enlarges the blast radius of any breach.
+
+   **Rejected: erasing audit metadata with the content.** It destroys the ability to prove an erasure occurred, which is the one record a privacy complaint actually needs.
+
+   **Needs.** Legal review, not just engineering review. Jurisdictional minimums and any mandatory retention may override every number above, and those are decisions for RCE-089 to record with dated primary-source evidence. Treat the figures as placeholders with reasoning attached, not as compliance advice.
+
+2. **Event log partitioning — DECIDED 2026-10-04: partition per continuity.** Owner decision. The contract body above now describes the partitioned layout.
+
+   **Consequences, stated so nothing assumes otherwise.** Replay cost is bounded by one continuity's history rather than the whole installation. Erasure fan-out becomes a scoped delete inside one partition instead of a global scan, which is what makes INV-040's "reaches every derivative" tractable at size. Event sequence numbers are monotonic **within a continuity, not globally** — anything that needs a total order must key on (continuity_id, sequence), and no consumer may assume a single global sequence. The SSE event id is unaffected: it was already scoped to conversation and branch.
+
+   **Accepted cost.** Cross-continuity audit now requires a deliberate fan-out across partitions. That is an administrative operation under least privilege rather than a hot path, so paying for it there is the right trade.
+
+3. **Snapshot cadence — PROPOSAL, awaiting owner approval.** Replay cost grows with branch length, and fixture 22 proves replay is deterministic while saying nothing about what it costs.
+
+   **Proposed.** An explicit configured value, `snapshot_every_n_events`, default 200, with a snapshot also forced at branch creation so a regeneration never replays through its parent's history.
+
+   **Rejected: no snapshots.** Replay cost grows without bound as a continuity lengthens; the feature that suffers first is resume, which ADR-007 makes a hard requirement.
+
+   **Rejected: a fixed unconfigurable constant.** It hides the knob, so the number can never be measured or corrected in a running deployment.
+
+   **Rejected: time-based cadence.** Elapsed time does not drive replay cost; event count does. A conversation idle for a week needs no snapshot, and a busy hour needs several.
+
+   **Needs.** A measured baseline from RCE-083 to tune the default. 200 is chosen to keep worst-case replay in the low hundreds of events, not because anything has been measured. ADR-004 already requires RCE-025, RCE-028 and RCE-037 to benchmark a compact context budget on shared continuity fixtures; cadence should be measured in that same exercise rather than in a separate one.
 
 4. **Fixture coverage — RESOLVED 2026-10-04.** All three now have a mandatory fixture in QUALITY.md: replay determinism under pinned rule versions is fixture 22 (RCE-012), a failed required effect rejecting the whole turn is fixture 19 (RCE-018, and the same fixture that covers INV-023), and a routine-only turn committing zero memory effects is fixture 23 (RCE-028). The third was the load-bearing one — it is the only check that catches an over-eager extractor writing a memory per narrated action, which is the behavior ADR-004 exists to prevent.
