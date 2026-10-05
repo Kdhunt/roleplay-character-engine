@@ -13665,7 +13665,7 @@
           "provider_disallows",
           "provider_unavailable"
         ],
-        "description": "Stable reasons. Deliberately never includes preference, orientation, relationship status, relationship history, bodily response, repeated past action, silence, or the setting or location of the scene — none of those may deny or satisfy any gate (INV-031). Where a scene happens carries social expectations; it carries no authorization."
+        "description": "Stable reasons, each naming a GATE'S OWN failure mode rather than the circumstance that triggered the check (INV-031). A descriptive fact may trigger revalidation — a location change putting a request outside an affirmed scope, for instance — but the recorded reason is willingness_out_of_scope, never the location. No reason here is, or may become, a descriptive fact about a person, their history, their body, their dispositions or their circumstances: not preference, orientation, tags, traits, reputation, relationship status or history, repeated past action, bodily response, silence, dress or presentation, setting, time of day, world lore, or prior scene content. Those may deny; none may satisfy."
       },
       "gates.GateEvaluation": {
         "type": "object",
