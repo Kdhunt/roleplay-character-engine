@@ -1,12 +1,13 @@
 {
   "format": "rce-story-plan",
   "schema_version": 1,
-  "as_of": "2026-10-04",
+  "as_of": "2026-10-05",
   "repository": "Kdhunt/roleplay-character-engine",
   "scope": "Responsive web/PWA, multi-account private roleplay, one human and 1-4 AI characters; not implemented yet.",
   "aliases": {"RCE-057": "RCE-010"},
   "record_format": "number|trello_short_id|title|dependency_numbers|module|acceptance",
   "design_ids": [1,2,3,25,45,53,54],
+  "m2_ids": [24,91],
   "m0_ids": [1,2,3,4,5,6,7,12,25,45,51,53,54,55,61,62,63,81,90],
   "workflow": {"Ideas":[24],"Ready for Design":[1,2,3,53,89],"Ready for Development":[61]},
   "module_contracts": {
@@ -132,6 +133,7 @@
     "87|iwcWOiF4|Define world lore, location hierarchy and state lifetimes|3,12,48,49,55|simulation|Implement authored lore visibility, acyclic location hierarchy and explicit environment lifecycle. Disconnect is not teardown; test watch persistence, reset preview and no inventory cloning.",
     "88|rJ9mKesT|Track player intent and scene focus without inventing preferences|28,30,36,55,85|context|Implement scoped explicit/inferred focus entries, user pins and expiry. Hard canon/gates survive relevance pruning; repeated generated text cannot create permanent user preferences.",
     "89|DR7cGtQX|RELEASE GATE: distribution, providers, age assurance and launch scope||release|Record owner-approved regions, assurance, privacy/retention, providers, budgets and recovery targets with dated evidence. Local development can proceed; production mocks and unapproved adult providers cannot.",
-    "90|8nne0PrA|Enforce coding-agent story contracts and traceability in CI|61|platform|Integrate AGENTS/Claude/Cursor/Copilot entrypoints, story manifest checker and PR evidence rules in CI. Fail duplicates, dangling/cyclic dependencies and missing references; no fake completion claims."
+    "90|8nne0PrA|Enforce coding-agent story contracts and traceability in CI|61|platform|Integrate AGENTS/Claude/Cursor/Copilot entrypoints, story manifest checker and PR evidence rules in CI. Fail duplicates, dangling/cyclic dependencies and missing references; no fake completion claims.",
+    "91|1vIbbwo0|Character and place framing: derive language and perception from the person|1,3,45,48,51,87|character|Deliver three-vantage tags over a pinned registry, the derivation chain from upbringing, education, self-concept, environment, mood and believed truths to lexicon, register, stance and salience with per-field provenance, versioned SocialFrame releases, and a per-instance PlaceView. No framing artifact is a FactEnvelope or satisfies a gate; salience governs mention and never existence; word choice presupposes nothing the instance has not perceived."
   ]
 }

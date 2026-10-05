@@ -27,10 +27,13 @@ test('archived alias must not be active or target a missing story', () => { cons
 test('valid archived redirect is accepted', () => { const p = plan(); p.aliases = { 'RCE-003': 'RCE-001' }; assert.deepEqual(validatePlan(p).errors, []); });
 test('missing or duplicated narrative sections are rejected', () => { has(plan(), /expected exactly one/, { storyText: '### RCE-001: title\n### RCE-001: duplicate' }); });
 test('malformed plan and dependency list fail cleanly', () => { has(null, /Invalid story-plan/); const p = plan(); p.stories[0].depends_on = 'RCE-002'; has(p, /invalid dependency list/); });
-test('real repository snapshot is acyclic and has 89 matching story sections', () => {
+test('real repository snapshot is acyclic and has 90 matching story sections', () => {
   const p = hydratePlan(JSON.parse(readFileSync(new URL('../docs/implementation/story-plan.json', import.meta.url), 'utf8')));
   const storyText = readFileSync(new URL('../docs/implementation/STORIES.md', import.meta.url), 'utf8');
   const result = validatePlan(p, { storyText });
-  assert.equal(p.stories.length, 89); assert.deepEqual(result.errors, []); assert.equal(result.order.length, 89);
+  assert.equal(p.stories.length, 90); assert.deepEqual(result.errors, []); assert.equal(result.order.length, 90);
+  // parity, so the next count bump cannot silently diverge from the narrative index
+  const headings = [...storyText.matchAll(/^### (RCE-\d{3}):/gm)].length;
+  assert.equal(headings, p.stories.length);
   assert.equal(p.aliases['RCE-057'], 'RCE-010');
 });

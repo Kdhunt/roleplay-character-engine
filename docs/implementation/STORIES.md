@@ -1,6 +1,6 @@
 # Agent story index
 
-Snapshot: 2026-10-04. There are 89 active cards: 57 retained original cards plus 32 application/platform additions. RCE-057 is archived and merged into RCE-010. Do not implement it twice.
+Snapshot: 2026-10-05. There are 90 active cards: 57 retained original cards plus 33 application/platform additions. RCE-057 is archived and merged into RCE-010. Do not implement it twice.
 
 Read AGENTS.md and the shared implementation contracts before coding. `story-plan.json` is the canonical data-only snapshot: each record contains its title, source card, predecessor IDs, module and specific acceptance outcome. Repeated module contracts and target paths are factored out. `node scripts/show-story.mjs RCE-061` expands one complete assignment; `node scripts/show-story.mjs --order` prints a dependency-first sequence.
 
@@ -278,3 +278,6 @@ Source: https://trello.com/c/DR7cGtQX
 
 ### RCE-090: Enforce coding-agent story contracts and traceability in CI
 Source: https://trello.com/c/8nne0PrA
+
+### RCE-091: Character and place framing: derive language and perception from the person
+Source: https://trello.com/c/1vIbbwo0
