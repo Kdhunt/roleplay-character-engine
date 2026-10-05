@@ -80,13 +80,23 @@ Nothing here asserts that the described behavior is implemented. RCE-061 bootstr
 
 **INV-030** Five checks are evaluated separately and each independently denies: account access, fictional adulthood, player content authorization, character current willingness, and provider capability. ADR-006 naming is canonical. **Account access is itself a conjunction and fails closed:** wherever adult access is evaluated, the request requires an authenticated principal, authorization for the resource, AND a valid current UserEligibility assurance. Assurance that is missing, expired or revoked denies, and a successful authentication never substitutes for it. The two are distinct records — UserAccount and UserEligibility — and neither implies the other.
 
-**INV-031** A gate is satisfied **only by its own evidence**: a verified session and resource authorization, a current assurance record, an explicit content authorization, an affirmed in-scope willingness record, or a declared provider capability. Nothing else may satisfy a gate, and no gate may be derived from another.
+**INV-031** A gate is satisfied **only by the evidence that gate is defined over**:
 
-Authorizing evidence is **performative or credentialed** — a deliberate, current, scoped, revocable act of permission, or a verified credential or policy. Its entire content is that something is permitted.
+| Gate | Its defining evidence |
+| --- | --- |
+| account access | a verified session, authorization for the resource, AND a current valid UserEligibility assurance (the conjunction in INV-030) |
+| fictional adulthood | an explicit authored age fact, known and adult, never inferred (INV-032) |
+| player content authorization | an explicit, scoped, revocable ContentConsent record |
+| character current willingness | an affirmed, in-scope, unrevoked CharacterWillingness record |
+| provider capability | a declared capability of the model adapter |
 
-A **descriptive fact** is anything that characterizes a person, their history, their body, their dispositions, or their circumstances. A descriptive fact may **deny** a gate, and may **invalidate the scope** of an affirmation so that it denies pending revalidation under INV-033. It may never **satisfy** one. Descriptive facts include, non-exhaustively: preference; orientation; tags, traits, archetype or reputation; relationship status or relationship history; repeated past action; bodily response; silence; dress or presentation; setting, location, environment or time of day; world lore or genre convention; and what has already occurred in the scene.
+No gate may be derived from another, and **no fact may satisfy a gate other than the one it is defined over.** In particular, nothing descriptive may substitute for a credential or for an act of permission.
 
-**The enumeration is illustrative and the principle governs.** A category absent from the list is excluded by default, never permitted by omission. This invariant was restated from the principle on 2026-10-05 after two separate holes were found by enumeration — setting, and tags — which is evidence that a list is the wrong instrument here.
+A **descriptive fact** is anything that characterizes a person, their history, their body, their dispositions, or their circumstances. A descriptive fact may **deny** a gate, and may **invalidate the scope** of an affirmation so that it denies pending revalidation under INV-033. It may never satisfy a gate it does not define. Descriptive facts include, non-exhaustively: preference; orientation; tags, traits, archetype or reputation; relationship status or relationship history; repeated past action; bodily response; silence; dress or presentation; setting, location, environment or time of day; world lore or genre convention; and what has already occurred in the scene.
+
+Note the age fact is both descriptive and defining: it characterizes a person, and it is the sole evidence for fictional adulthood. That is why the rule is scoped to the gate a fact defines rather than phrased as a blanket prohibition on descriptive evidence — an earlier draft of this invariant omitted the age fact from its evidence list and thereby made fictional adulthood unsatisfiable.
+
+**The enumeration of descriptive facts is illustrative and the principle governs.** A category absent from the list is excluded by default, never permitted by omission. This invariant was restated from the principle on 2026-10-05 after two separate holes were found by enumeration — setting, and tags — which is evidence that a list is the wrong instrument here.
 
 **INV-032** Fictional adulthood requires an unambiguously adult age. Unknown or conflicting age fails the check, and adulthood is never inferred from appearance, anatomy, species or archetype name.
 
