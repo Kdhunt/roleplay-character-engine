@@ -1,6 +1,6 @@
 # Proposal: character and place framing
 
-**Status: PROPOSAL. No card exists yet.** This is a design note, not a contract. Nothing here is normative, and `proposals/` is deliberately outside the contract set. Supersedes the earlier `social-frame.md`, which is axis 2 below.
+**Status: PROPOSAL, tracked by RCE-091** (https://trello.com/c/1vIbbwo0, Backlog). The card exists so the work is visible; it does not mean the design is settled. This is a design note, not a contract — nothing here is normative, and `proposals/` is deliberately outside the contract set. Supersedes the earlier `social-frame.md`, which is axis 2 below.
 
 Snapshot 2026-10-05.
 
@@ -168,9 +168,9 @@ Turns "does it feel right" into numbers.
 
 Nothing in this proposal is implemented, but one thing it would have needed is already in place: **INV-031 was restated from its generating principle on 2026-10-05** (#12), so tags, traits, archetype, reputation, dress, presentation, setting, location, environment, world lore and prior scene content are all named descriptive facts that may deny a gate but never satisfy one they do not define. No axis here requires a new gate invariant.
 
-## Proposed card
+## The card
 
-Draft text for Trello, not yet created. One card, four bounded tasks, approvable per axis.
+**RCE-091**, in Backlog, carrying a checklist of the four tasks below plus a closing gate. Backlog rather than Ready for Design because QUALITY.md defines Backlog as defined but dependency-blocked or unscheduled: this depends on RCE-048 and RCE-087, which are themselves Backlog, and open question 2 cannot be settled until those models exist. Drafted against epic RCE-042 — see open question 4, which the card does not close.
 
 > **Character and place framing: derive language and perception from the person**
 >
@@ -197,7 +197,7 @@ Draft text for Trello, not yet created. One card, four bounded tasks, approvable
 1. **Is `modality` four values or a scalar?** Four discrete values are auditable; a salience scalar ranks better under a context budget. The draft carries both, which is probably one too many.
 2. **Where does a frame resolve — location, environment template, or both?** RCE-048 and RCE-087 own those models and are unbuilt, so this cannot be settled here.
 3. **Do frames ever affect physical validation?** Proposed answer: no. Proxemics expectations inform generation, never the geometry engine, or the two will disagree.
-4. **Epic placement.** Drafted against RCE-042 (character integrity and behavioral intelligence) because the centre of gravity is the character, but axes 2 and 3 are arguably RCE-043 runtime world state. Owner's call.
+4. **Epic placement.** RCE-091 is filed under RCE-042 (character integrity and behavioral intelligence) because the centre of gravity is the character, but axes 2 and 3 are arguably RCE-043 runtime world state. Filing it somewhere was necessary to create the card; it is not a decision, and moving it costs one field.
 5. **If a framing artifact can never be a fact, what reads it?** Context compilation and validation only — which means framing needs its own retrieval path rather than riding the memory ranking RCE-036 owns. Whether that is a separate service or a branch inside the context compiler is unsettled, and it affects RCE-017's shape.
 6. **How much derivation is too much?** Deriving everything moves all the difficulty into one function. The mitigation is per-field provenance plus authored overrides, but there is no principled answer yet to *which* fields should default to derived versus authored, and getting that split wrong is the most likely way this feature becomes unusable.
 
