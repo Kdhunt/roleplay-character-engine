@@ -26,3 +26,5 @@ jobs:
         run: node --test scripts/check-story-plan.test.mjs
       - name: Test the story dispatcher
         run: node --test scripts/dispatch-stories.test.mjs
+      - name: Check the OpenAPI document matches the endpoint table
+        run: node scripts/build-openapi.mjs --check

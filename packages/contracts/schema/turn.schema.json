@@ -479,6 +479,143 @@
           }
         }
       ]
+    },
+    "ActionBatchRequest": {
+      "type": "object",
+      "description": "A dry-run batch. The snapshot revision is required because validation is meaningless without the state it was evaluated against (API.md).",
+      "properties": {
+        "snapshot_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "urn:rce:schema:turn#/$defs/ActionProposal"
+          },
+          "description": "Ordered. Order is significant: simultaneous actions are validated against intermediate state."
+        }
+      },
+      "required": [
+        "snapshot_revision",
+        "actions"
+      ],
+      "additionalProperties": false
+    },
+    "ActionValidationResponse": {
+      "type": "object",
+      "description": "A validation outcome, plus the token that authorizes a later commit of the same payload. The token binds payload hash, principal, policy revision and snapshot (API.md), so it is issued only when the outcome is valid.",
+      "properties": {
+        "validation": {
+          "$ref": "urn:rce:schema:turn#/$defs/ValidationResult"
+        },
+        "validation_token": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 512,
+          "description": "Opaque. Never logged."
+        },
+        "snapshot_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        }
+      },
+      "required": [
+        "validation",
+        "snapshot_revision"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "validation": {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "const": "valid"
+                  }
+                },
+                "required": [
+                  "outcome"
+                ]
+              }
+            },
+            "required": [
+              "validation"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "required": [
+              "validation_token"
+            ],
+            "properties": {
+              "validation_token": true
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "validation": {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "enum": [
+                      "needs_clarification",
+                      "rejected"
+                    ]
+                  }
+                },
+                "required": [
+                  "outcome"
+                ]
+              }
+            },
+            "required": [
+              "validation"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "properties": {
+              "validation_token": false
+            }
+          }
+        }
+      ]
+    },
+    "ActionCommitRequest": {
+      "type": "object",
+      "description": "Commit of a previously validated batch. The actions are resent so the token can bind their payload hash, and expected_scene_revision is rechecked against current state at commit (ADR-004, INV-025).",
+      "properties": {
+        "validation_token": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 512
+        },
+        "expected_scene_revision": {
+          "$ref": "urn:rce:schema:common#/$defs/Revision"
+        },
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "$ref": "urn:rce:schema:turn#/$defs/ActionProposal"
+          },
+          "description": "Ordered. Order is significant: simultaneous actions are validated against intermediate state."
+        }
+      },
+      "required": [
+        "validation_token",
+        "expected_scene_revision",
+        "actions"
+      ],
+      "additionalProperties": false
     }
   }
 }
