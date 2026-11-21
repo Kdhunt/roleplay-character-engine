@@ -23,7 +23,7 @@ export function hydratePlan(raw) {
     if (workflow.length > 1) throw new Error(`Multiple workflow states for ${id(n)}`);
     return { id: id(n), title, source: `https://trello.com/c/${short}`,
       kind: module === 'epic' ? 'epic' : module === 'release' ? 'release_gate' : raw.design_ids?.includes(n) ? 'design' : 'story',
-      milestone: n === 24 ? 'M2' : raw.m0_ids?.includes(n) ? 'M0' : 'M1',
+      milestone: raw.m2_ids?.includes(n) ? 'M2' : raw.m0_ids?.includes(n) ? 'M0' : 'M1',
       status: workflow[0]?.[0] ?? 'Backlog',
       depends_on: deps ? deps.split(',').map(d => { if (!/^\d+$/.test(d)) throw new Error('Invalid dependency number'); return id(Number(d)); }) : [],
       module, targets: raw.module_targets?.[module], contracts: raw.module_contracts?.[module], acceptance };
